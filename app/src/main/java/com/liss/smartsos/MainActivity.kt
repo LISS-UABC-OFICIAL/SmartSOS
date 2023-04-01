@@ -105,6 +105,11 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Pulsación de Anterior detectada", Toast.LENGTH_LONG).show()
                 return true
             }
+            KeyEvent.KEYCODE_BUTTON_START -> {
+                Toast.makeText(this, "Pulsación de boton detectada", Toast.LENGTH_LONG).show()
+                exec911()
+                return true
+            }
         }
         return super.onKeyDown(keyCode, event)
     }
