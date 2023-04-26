@@ -35,6 +35,7 @@
     <!-- parte requerida para que el launch intent no de valor null ya que android 11 no da esta informacion-->
     <queries>
         <package android:name="com.c4bc.alerta066m"/>
+        <package android:name="med.track.med"/>
     </queries>
 
 </manifest>

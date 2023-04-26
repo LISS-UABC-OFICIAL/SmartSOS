@@ -14,10 +14,15 @@ import android.bluetooth.BluetoothProfile
 import android.widget.Button
 import android.widget.Toast
 import android.view.KeyEvent
+import androidx.appcompat.app.AppCompatDelegate
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        //Forzar que el modo oscuro se deshabilite
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+
         setContentView(R.layout.activity_main)
 
         //Boton de prueba para ejecutar la aplicacion 911
@@ -51,6 +56,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun execMedTrack() {
+        //Nombre interno de la aplicacion MedTrack
+        val launchIntent2 = packageManager.getLaunchIntentForPackage("med.track.med")
+        if (launchIntent2 != null) {
+            launchIntent2.setClassName("med.track.med", "io.ionic.starter.MainActivity")
+            startActivity(launchIntent2)
+        } else {
+            //Envia mensaje cuando no se pueda encontrar la aplicacion
+            Toast.makeText(this@MainActivity, "La aplicacion no se encuentra o no esta instalada en el dispositivo", Toast.LENGTH_LONG).show()
+        }
+    }
+
     //Mostrar el boton de configuracion
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.settings,menu)
@@ -62,6 +79,7 @@ class MainActivity : AppCompatActivity() {
         when (item.itemId) {
             R.id.settings -> {
                 //Acciones a realizar al presionar el boton
+                Toast.makeText(this, "Boton de configuracion presionado", Toast.LENGTH_LONG).show()
                 return true
             }
             else -> return super.onOptionsItemSelected(item)
@@ -93,19 +111,32 @@ class MainActivity : AppCompatActivity() {
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         when (keyCode) {
-            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
-                Toast.makeText(this, "Pulsación de Play/Pause detectada", Toast.LENGTH_LONG).show()
-                return true
-            }
-            KeyEvent.KEYCODE_MEDIA_NEXT -> {
-                Toast.makeText(this, "Pulsación de Siguiente detectada", Toast.LENGTH_LONG).show()
-                return true
-            }
-            KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
-                Toast.makeText(this, "Pulsación de Anterior detectada", Toast.LENGTH_LONG).show()
-                return true
-            }
             KeyEvent.KEYCODE_BUTTON_START -> {
+                Toast.makeText(this, "Pulsación de boton detectada", Toast.LENGTH_LONG).show()
+                exec911()
+                return true
+            }
+            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
+                Toast.makeText(this, "Pulsación de bluetooth detectada", Toast.LENGTH_LONG).show()
+                exec911()
+                return true
+            }
+            KeyEvent.KEYCODE_MEDIA_PLAY-> {
+                Toast.makeText(this, "Pulsación de bluetooth detectada", Toast.LENGTH_LONG).show()
+                exec911()
+                return true
+            }
+            KeyEvent.KEYCODE_MEDIA_PAUSE -> {
+                Toast.makeText(this, "Pulsación de bluetooth detectada", Toast.LENGTH_LONG).show()
+                exec911()
+                return true
+            }
+            KeyEvent.KEYCODE_BUTTON_SELECT -> {
+                Toast.makeText(this, "Pulsación de boton detectada", Toast.LENGTH_LONG).show()
+                execMedTrack()
+                return true
+            }
+            KeyEvent.KEYCODE_1 -> {
                 Toast.makeText(this, "Pulsación de boton detectada", Toast.LENGTH_LONG).show()
                 exec911()
                 return true
