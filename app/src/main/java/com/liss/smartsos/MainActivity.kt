@@ -10,11 +10,25 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothHeadset
 import android.bluetooth.BluetoothProfile
 
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothSocket
+
 //importaciones necesarias
 import android.widget.Button
 import android.widget.Toast
 import android.view.KeyEvent
 import androidx.appcompat.app.AppCompatDelegate
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.telephony.gsm.SmsManager
+
+import android.util.Log
+import java.io.IOException
+import java.io.InputStream
+import java.util.*
+import android.os.Looper
+import android.os.Handler
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,10 +43,13 @@ class MainActivity : AppCompatActivity() {
         val buttonTest = findViewById<Button>(R.id.button)
         buttonTest.setOnClickListener {
             //Ejecuta la funcion al pulsar el boton
-            exec911()
+            //exec911()
+            //sendSMS("6645333103", "Mensaje de prueba",this)
+            sendSMS("6643538663", "Mensaje de prueba 123 hola",this)
         }
 
         //BT
+        /*
         val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
 
         if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled) {
@@ -41,6 +58,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         bluetoothAdapter.getProfileProxy(this, mHeadsetServiceListener, BluetoothProfile.HEADSET)
+
+        */
+
+        //TEST
     }
 
     //Ejecutar aplicacion 911
@@ -86,6 +107,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    //SMS
+    private fun sendSMS(phoneNumber: String, message: String, context: Context) {
+        val sentIntent = Intent("SMS_SENT").let { sentIntent ->
+            PendingIntent.getBroadcast(context, 0, sentIntent, PendingIntent.FLAG_IMMUTABLE)
+        }
+        val smsManager = SmsManager.getDefault()
+        smsManager.sendTextMessage(phoneNumber, null, message, sentIntent, null)
+    }
+
+    /*
     //Codificacion relacionada con la conectividad Bluetooth
     private var mBluetoothHeadset: BluetoothHeadset? = null
     private val mHeadsetServiceListener = object : BluetoothProfile.ServiceListener {
@@ -101,17 +132,26 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+    */
 
     override fun onDestroy() {
         super.onDestroy()
+        /*
         mBluetoothHeadset?.let {
             BluetoothAdapter.getDefaultAdapter()?.closeProfileProxy(BluetoothProfile.HEADSET, it)
         }
+        */
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+
+        if (event != null && event.action == KeyEvent.ACTION_DOWN) {
+            Toast.makeText(this, "KeyCode: $keyCode", Toast.LENGTH_SHORT).show()
+            //return true
+        }
+
         when (keyCode) {
-            KeyEvent.KEYCODE_BUTTON_START -> {
+            KeyEvent.KEYCODE_BUTTON_START-> {
                 Toast.makeText(this, "Pulsación de boton detectada", Toast.LENGTH_LONG).show()
                 exec911()
                 return true
