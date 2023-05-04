@@ -6,12 +6,14 @@ import android.view.Menu
 import android.view.MenuItem
 
 //importaciones relacionadas a la conectividad bluetooth
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothHeadset
-import android.bluetooth.BluetoothProfile
+import android.bluetooth.*
 
-import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothSocket
+//importaciones relacionadas al envio de SMS
+import android.telephony.gsm.SmsManager
+
+//Importaciones relacionadas a la ubicacion
+import android.location.Location
+import android.location.LocationManager
 
 //importaciones necesarias
 import android.widget.Button
@@ -22,13 +24,9 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.telephony.gsm.SmsManager
 import androidx.core.content.ContextCompat
 import android.Manifest
-import android.app.Activity
 import android.app.AlertDialog
-import android.net.Uri
-import android.provider.Settings
 import androidx.core.app.ActivityCompat
 import java.util.*
 
@@ -41,11 +39,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         //Solicitar permisos iniciales
-        if (!isSmsPermissionGranted()) {
-            showPermissionDialog()
-        } else {
-            // El permiso ya ha sido concedido
-        }
+        showPermissionDialog()
 
         //Boton de prueba para ejecutar la aplicacion 911
         val buttonTest = findViewById<Button>(R.id.button)
@@ -53,41 +47,10 @@ class MainActivity : AppCompatActivity() {
             //Ejecuta la funcion al pulsar el boton
             //exec911()
             //sendSMS("6645333103", "Mensaje de prueba",this)
-            sendSMS("6641873545", "Mensaje de prueba 123 hola",this)
-        }
 
-        //Serial
-        val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-        if (bluetoothAdapter == null) {
-            // El dispositivo no admite Bluetooth
-        } else {
-            if (!bluetoothAdapter.isEnabled()) {
-                // El Bluetooth no está activado, se puede solicitar al usuario que lo active
-            } else {
-                // El Bluetooth está activado
-                val device = bluetoothAdapter.getRemoteDevice("98:D3:31:F5:B8:2E")
-                val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
-                val socket = device.createRfcommSocketToServiceRecord(uuid)
-                socket.connect()
-
-                val inputStream = socket.inputStream
-                val buffer = ByteArray(1024)
-                var bytes: Int
-
-                while (true) {
-                    bytes = inputStream.read(buffer)
-                    val message = String(buffer, 0, bytes)
-                    runOnUiThread {
-                        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-                        if (message == "1")
-                        {
-                            exec911()
-                            sendSMS("6642867484", "Mensaje de prueba 123",this)
-                        }
-                    }
-                }
-                socket.close()
-            }
+            //sendSMS("6641873545", "Mensaje de prueba 123 hola",this)
+            //Toast.makeText(this, getLocationLink(this), Toast.LENGTH_LONG).show()
+            serialScan()
         }
 
         //BT
@@ -107,15 +70,49 @@ class MainActivity : AppCompatActivity() {
     }
 
     //Solicitando permisos
+    /*
     private val PERMISSION_REQUEST_SEND_SMS = 123 // número de solicitud de permiso
+
+    private fun isBluetoothConnectPermissionGranted(): Boolean {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+    }
+
     // Función para verificar si se tiene permiso para enviar SMS
     private fun isSmsPermissionGranted(): Boolean {
         return ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED
     }
 
+    // Funcion para solicitar permisos de Bluetooth
+    private fun requestBluetoothConnectPermission(){
+        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.BLUETOOTH_CONNECT), 1)
+    }
+
     // Función para solicitar permiso para enviar SMS
     private fun requestSmsPermission() {
         ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.SEND_SMS), PERMISSION_REQUEST_SEND_SMS)
+    }
+    */
+
+    //Solicitando permisos
+    private fun requestPermissions(){
+        // Array de permisos a solicitar
+        val permissions = arrayOf(
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.SEND_SMS,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        )
+        // Comprobar si se tienen todos los permisos necesarios
+        val permissionsToRequest = mutableListOf<String>()
+        for (permission in permissions) {
+            if (ContextCompat.checkSelfPermission(this, permission)
+                != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(permission)
+            }
+        }
+        // Si se tienen todos los permisos, se puede continuar con la ejecución del código que los requiere, si no se tienen todos los permisos, se solicitan al usuario
+        if (permissionsToRequest.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, permissionsToRequest.toTypedArray(), 1)
+        }
     }
 
     // Función para mostrar un diálogo de permisos
@@ -124,7 +121,7 @@ class MainActivity : AppCompatActivity() {
         builder.apply {
             setMessage("Esta aplicación necesita los permisos siguientes para funcionar correctamente.")
             setPositiveButton("Aceptar") { _, _ ->
-                requestSmsPermission()
+                requestPermissions()
             }
         }
         val dialog = builder.create()
@@ -192,7 +189,95 @@ class MainActivity : AppCompatActivity() {
 
         // Enviamos el mensaje
         val smsManager = SmsManager.getDefault()
-        smsManager.sendTextMessage(phoneNumber, null, message, sentIntent, null)
+        smsManager.sendTextMessage(phoneNumber, null, message+" "+getLocationLink(this), sentIntent, null)
+    }
+
+    //Obtener la localizacion (NO COMPLETADO)
+    fun getLocationLink(context: Context): String {
+        val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+
+        // Verificamos si el permiso de ubicación está concedido
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            // Obtenemos la última ubicación conocida
+            val location: Location? = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+
+            // Verificamos si se encontró la ubicación
+            if (location != null) {
+                // Obtenemos las coordenadas
+                val latitude = location.latitude
+                val longitude = location.longitude
+
+                // Creamos el enlace de Google Maps con las coordenadas
+                return "https://www.google.com/maps?q=$latitude,$longitude"
+            }
+        }
+
+        // Si no se pudo obtener la ubicación o el permiso de ubicación no está concedido, regresamos un enlace vacío
+        return ""
+    }
+
+    //Serial
+    fun serialScan()
+    {
+        val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+        if (bluetoothAdapter == null)
+        {
+            // El dispositivo no admite Bluetooth
+        }
+        else
+        {
+            if (!bluetoothAdapter.isEnabled())
+            {
+                // El Bluetooth no está activado, se puede solicitar al usuario que lo active
+            }
+            else
+            {
+                // El Bluetooth está activado
+                val bondedDevices = bluetoothAdapter.bondedDevices
+                var address: String? = null
+                for (device in bondedDevices)
+                {
+                    if (device.bluetoothClass.majorDeviceClass == BluetoothClass.Device.Major.UNCATEGORIZED
+                        && device.name == "SmartSOS")
+                    {
+                        // Se ha encontrado el dispositivo deseado
+                        address = device.address
+                        break
+                    }
+                }
+                if (address == null)
+                {
+                    // El dispositivo no está emparejado o no se ha encontrado el dispositivo deseado
+                }
+                else
+                {
+                    // Se ha encontrado la dirección MAC del dispositivo deseado, se puede utilizar para establecer la conexión Bluetooth
+                    val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+                    val device = bluetoothAdapter.getRemoteDevice(address)
+                    val socket = device.createRfcommSocketToServiceRecord(uuid)
+                    socket.connect()
+
+                    val inputStream = socket.inputStream
+                    val buffer = ByteArray(1024)
+                    var bytes: Int
+
+                    while (true)
+                    {
+                        bytes = inputStream.read(buffer)
+                        val message = String(buffer, 0, bytes)
+                        runOnUiThread {
+                            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                            if (message == "1")
+                            {
+                                exec911()
+                                sendSMS("6641873545", "Mensaje de prueba 123",this)
+                            }
+                        }
+                    }
+                    socket.close()
+                }
+            }
+        }
     }
 
     /*
