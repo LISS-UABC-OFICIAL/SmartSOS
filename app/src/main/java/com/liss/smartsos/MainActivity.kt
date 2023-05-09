@@ -8,6 +8,9 @@ import android.view.MenuItem
 //importaciones relacionadas a la conectividad bluetooth
 import android.bluetooth.*
 
+//importaciones relacionadas a la obtencion de contacto de confianza
+import android.provider.ContactsContract
+
 //importaciones relacionadas al envio de SMS
 import android.telephony.gsm.SmsManager
 
@@ -27,6 +30,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import android.Manifest
+import android.app.Activity
 import android.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import java.util.*
@@ -74,6 +78,7 @@ class MainActivity : AppCompatActivity() {
         // Array de permisos a solicitar
         val permissions = arrayOf(
             Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.READ_CONTACTS,
             Manifest.permission.SEND_SMS,
             Manifest.permission.ACCESS_FINE_LOCATION
         )
@@ -119,7 +124,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun execSOS(){
         val ubi = getLocationLink(this)
-        sendSMS("6641873545", "Mensaje de prueba 123"+" "+ubi,this)
+        val cc = getSelectedContactNumber()
+        if (cc != "error")
+        {
+            sendSMS(cc, "Mensaje de prueba 123"+" "+ubi,this)
+        }
+        else{
+            Toast.makeText(this, "Se necesita indicar un contacto de confianza para enviar mensajes", Toast.LENGTH_LONG).show()
+        }
         exec911()
     }
 
@@ -148,9 +160,94 @@ class MainActivity : AppCompatActivity() {
             R.id.settings -> {
                 //Acciones a realizar al presionar el boton
                 Toast.makeText(this, "Boton de configuracion presionado", Toast.LENGTH_LONG).show()
+                getContactInfo()
                 return true
             }
             else -> return super.onOptionsItemSelected(item)
+        }
+    }
+
+    //Obtener contacto de confianza
+    // Crear una variable para almacenar el ID del contacto seleccionado
+    var contactId: String? = null
+
+    // Crear una función para obtener el nombre y número de teléfono del contacto seleccionado
+    fun getContactInfo() {
+        // Verificar si tenemos permiso de lectura de contactos
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+            // Si no tenemos permiso, se muestra un mensaje explicando que se requiere el permiso
+            Toast.makeText(this, "Se requiere permiso para obtener el contacto de confianza", Toast.LENGTH_SHORT).show()
+        } else {
+            // Si tenemos permiso, abrir la lista de contactos
+            val intent = Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI)
+            startActivityForResult(intent, 1)
+        }
+    }
+
+    // Crear una función para obtener el nombre y número de teléfono del contacto seleccionado usando el ID
+    fun getSelectedContactInfo() {
+        // Verificar si tenemos el ID del contacto seleccionado
+        if (contactId == null) {
+            // Si no tenemos el ID, mostrar un mensaje de error
+        } else {
+            val cursor = contentResolver.query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                null,
+                ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
+                arrayOf(contactId),
+                null
+            )
+            cursor?.let {
+                if (cursor.moveToFirst()) {
+                    val name = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME))
+                    val phoneNumber = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
+                    // Usar el nombre y número de teléfono como sea necesario
+
+                }
+                cursor.close()
+            }
+        }
+    }
+
+    fun getSelectedContactNumber(): String {
+        // Verificar si tenemos el ID del contacto seleccionado
+        if (contactId == null) {
+            // Si no tenemos el ID, mostrar un mensaje de error
+            return "error"
+        } else {
+            val cursor = contentResolver.query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                null,
+                ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
+                arrayOf(contactId),
+                null
+            )
+            cursor?.let {
+                if (cursor.moveToFirst()) {
+                    val phoneNumber = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
+                    return phoneNumber
+                }
+                cursor.close()
+            }
+            return "error"
+        }
+    }
+
+    // Sobrescribir el método onActivityResult para obtener el ID del contacto seleccionado
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
+            val contactUri = data?.data
+            contactUri?.let {
+                val cursor = contentResolver.query(it, null, null, null, null)
+                cursor?.let {
+                    if (cursor.moveToFirst()) {
+                        contactId = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID))
+                    }
+                    cursor.close()
+                    Toast.makeText(this, "Contacto de confianza guardado: "+getSelectedContactNumber(), Toast.LENGTH_LONG).show()
+                }
+            }
         }
     }
 
@@ -211,7 +308,7 @@ class MainActivity : AppCompatActivity() {
         return ""
     }
 
-    //Serial
+    //Comunicacion Bluetooth Serial
     fun serialScan()
     {
         val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()

@@ -4,10 +4,18 @@
 
     <!--Permisos requeridos-->
     <uses-feature android:name="android.hardware.bluetooth" android:required="true"/>
+    <!--Permisos Bluetooth-->
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
+    <!--Permiso para obtener el contacto de confianza-->
+    <uses-permission android:name="android.permission.READ_CONTACTS"/>
+
+    <!--Permiso para enviar SMS-->
     <uses-permission android:name="android.permission.SEND_SMS"/>
+
+    <!--Permisos de Ubicacion-->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
@@ -35,7 +43,7 @@
 
     </application>
 
-    <!-- parte requerida para que el launch intent no de valor null ya que android 11 no da esta informacion-->
+    <!-- Parte requerida para que el launch intent no de valor null ya que android 11 no da esta informacion-->
     <queries>
         <package android:name="com.c4bc.alerta066m"/>
         <package android:name="med.track.med"/>
