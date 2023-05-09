@@ -14,6 +14,7 @@ import android.telephony.gsm.SmsManager
 //Importaciones relacionadas a la ubicacion
 import android.location.Location
 import android.location.LocationManager
+import android.location.LocationListener
 
 //importaciones necesarias
 import android.widget.Button
@@ -47,10 +48,10 @@ class MainActivity : AppCompatActivity() {
             //Ejecuta la funcion al pulsar el boton
             //exec911()
             //sendSMS("6645333103", "Mensaje de prueba",this)
-
             //sendSMS("6641873545", "Mensaje de prueba 123 hola",this)
-            //Toast.makeText(this, getLocationLink(this), Toast.LENGTH_LONG).show()
-            serialScan()
+            Toast.makeText(this, getLocationLink(this), Toast.LENGTH_LONG).show()
+            //getLoc()
+            //serialScan()
         }
 
         //BT
@@ -66,32 +67,7 @@ class MainActivity : AppCompatActivity() {
 
         */
 
-        //TEST
     }
-
-    //Solicitando permisos
-    /*
-    private val PERMISSION_REQUEST_SEND_SMS = 123 // número de solicitud de permiso
-
-    private fun isBluetoothConnectPermissionGranted(): Boolean {
-        return ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
-    }
-
-    // Función para verificar si se tiene permiso para enviar SMS
-    private fun isSmsPermissionGranted(): Boolean {
-        return ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED
-    }
-
-    // Funcion para solicitar permisos de Bluetooth
-    private fun requestBluetoothConnectPermission(){
-        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.BLUETOOTH_CONNECT), 1)
-    }
-
-    // Función para solicitar permiso para enviar SMS
-    private fun requestSmsPermission() {
-        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.SEND_SMS), PERMISSION_REQUEST_SEND_SMS)
-    }
-    */
 
     //Solicitando permisos
     private fun requestPermissions(){
@@ -139,6 +115,12 @@ class MainActivity : AppCompatActivity() {
             //Envia mensaje cuando no se pueda encontrar la aplicacion
             Toast.makeText(this@MainActivity, "La aplicacion no se encuentra o no esta instalada en el dispositivo", Toast.LENGTH_LONG).show()
         }
+    }
+
+    private fun execSOS(){
+        val ubi = getLocationLink(this)
+        sendSMS("6641873545", "Mensaje de prueba 123"+" "+ubi,this)
+        exec911()
     }
 
     //Ejecutar aplicacion MedTrak
@@ -189,30 +171,43 @@ class MainActivity : AppCompatActivity() {
 
         // Enviamos el mensaje
         val smsManager = SmsManager.getDefault()
-        smsManager.sendTextMessage(phoneNumber, null, message+" "+getLocationLink(this), sentIntent, null)
+        smsManager.sendTextMessage(phoneNumber, null, message, sentIntent, null)
     }
 
-    //Obtener la localizacion (NO COMPLETADO)
+    //Obtener la ubicacion para SMS
     fun getLocationLink(context: Context): String {
         val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
         // Verificamos si el permiso de ubicación está concedido
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            // Obtenemos la última ubicación conocida
-            val location: Location? = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+            // Definimos un LocationListener para obtener actualizaciones de ubicación
+            val locationListener = object : LocationListener {
+                override fun onLocationChanged(location: Location) {
+                    // Cuando se obtiene una nueva ubicación, se crea el enlace de Google Maps con las coordenadas
+                    val latitude = location.latitude
+                    val longitude = location.longitude
+                    val mapsLink = "https://www.google.com/maps?q=$latitude,$longitude"
+                    // Imprimimos el enlace a la consola para verificar que se está actualizando correctamente
+                }
 
-            // Verificamos si se encontró la ubicación
-            if (location != null) {
-                // Obtenemos las coordenadas
-                val latitude = location.latitude
-                val longitude = location.longitude
+                override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {}
+                override fun onProviderEnabled(provider: String) {}
+                override fun onProviderDisabled(provider: String) {}
+            }
 
-                // Creamos el enlace de Google Maps con las coordenadas
+            // Registramos el LocationListener para recibir actualizaciones de ubicación cada 5 segundos
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 0f, locationListener)
+
+            // Si se obtuvo la ubicación previa, se crea el enlace de Google Maps con las coordenadas
+            val lastLocation: Location? = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+            if (lastLocation != null) {
+                val latitude = lastLocation.latitude
+                val longitude = lastLocation.longitude
                 return "https://www.google.com/maps?q=$latitude,$longitude"
             }
         }
 
-        // Si no se pudo obtener la ubicación o el permiso de ubicación no está concedido, regresamos un enlace vacío
+        // Si no se pudo obtener la ubicación o el permiso de ubicación no está concedido, regresamos un espacio vacío
         return ""
     }
 
@@ -269,8 +264,9 @@ class MainActivity : AppCompatActivity() {
                             Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
                             if (message == "1")
                             {
-                                exec911()
-                                sendSMS("6641873545", "Mensaje de prueba 123",this)
+                                execSOS()
+                                //exec911()
+                                //sendSMS("6641873545", "Mensaje de prueba 123",this)
                             }
                         }
                     }
@@ -317,32 +313,12 @@ class MainActivity : AppCompatActivity() {
         when (keyCode) {
             KeyEvent.KEYCODE_BUTTON_START-> {
                 Toast.makeText(this, "Pulsación de boton detectada", Toast.LENGTH_LONG).show()
-                exec911()
-                return true
-            }
-            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
-                Toast.makeText(this, "Pulsación de bluetooth detectada", Toast.LENGTH_LONG).show()
-                exec911()
-                return true
-            }
-            KeyEvent.KEYCODE_MEDIA_PLAY-> {
-                Toast.makeText(this, "Pulsación de bluetooth detectada", Toast.LENGTH_LONG).show()
-                exec911()
-                return true
-            }
-            KeyEvent.KEYCODE_MEDIA_PAUSE -> {
-                Toast.makeText(this, "Pulsación de bluetooth detectada", Toast.LENGTH_LONG).show()
-                exec911()
+                execSOS()
                 return true
             }
             KeyEvent.KEYCODE_BUTTON_SELECT -> {
                 Toast.makeText(this, "Pulsación de boton detectada", Toast.LENGTH_LONG).show()
                 execMedTrack()
-                return true
-            }
-            KeyEvent.KEYCODE_1 -> {
-                Toast.makeText(this, "Pulsación de boton detectada", Toast.LENGTH_LONG).show()
-                exec911()
                 return true
             }
         }
