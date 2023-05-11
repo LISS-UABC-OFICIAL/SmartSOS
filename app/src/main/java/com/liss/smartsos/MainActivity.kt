@@ -160,7 +160,14 @@ class MainActivity : AppCompatActivity() {
             R.id.settings -> {
                 //Acciones a realizar al presionar el boton
                 Toast.makeText(this, "Boton de configuracion presionado", Toast.LENGTH_LONG).show()
+                return true
+            }
+            R.id.contactSelect -> {
                 getContactInfo()
+                return true
+            }
+            R.id.contactView -> {
+                getSelectedContactInfo()
                 return true
             }
             else -> return super.onOptionsItemSelected(item)
@@ -189,6 +196,18 @@ class MainActivity : AppCompatActivity() {
         // Verificar si tenemos el ID del contacto seleccionado
         if (contactId == null) {
             // Si no tenemos el ID, mostrar un mensaje de error
+            val contactMsgShow = AlertDialog.Builder(this)
+            contactMsgShow .setTitle("Hubo un problema")
+            contactMsgShow .setMessage("Aun no se ha asignado un contacto de confianza")
+            contactMsgShow .setPositiveButton("Aceptar") { dialog, which ->
+                // Acción que se realiza al pulsar el botón "Aceptar"
+            }
+            contactMsgShow .setNegativeButton("Asignar contacto") { dialog, which ->
+                // Acción que se realiza al pulsar el botón "Editar"
+                getContactInfo()
+            }
+            val dialog = contactMsgShow .create()
+            dialog.show()
         } else {
             val cursor = contentResolver.query(
                 ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
@@ -202,6 +221,20 @@ class MainActivity : AppCompatActivity() {
                     val name = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME))
                     val phoneNumber = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
                     // Usar el nombre y número de teléfono como sea necesario
+
+                    //Mostrar un mensaje con el nombre y numeros obtenidos
+                    val contactMsgShow = AlertDialog.Builder(this)
+                    contactMsgShow .setTitle("Contacto de confianza actual")
+                    contactMsgShow .setMessage("$name $phoneNumber")
+                    contactMsgShow .setPositiveButton("Aceptar") { dialog, which ->
+                        // Acción que se realiza al pulsar el botón "Aceptar"
+                    }
+                    contactMsgShow .setNegativeButton("Editar contacto") { dialog, which ->
+                        // Acción que se realiza al pulsar el botón "Editar"
+                        getContactInfo()
+                    }
+                    val dialog = contactMsgShow .create()
+                    dialog.show()
 
                 }
                 cursor.close()
@@ -293,7 +326,10 @@ class MainActivity : AppCompatActivity() {
             }
 
             // Registramos el LocationListener para recibir actualizaciones de ubicación cada 5 segundos
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 0f, locationListener)
+            //locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 0f, locationListener)
+
+            // Solicitamos una sola actualizacion de ubicación para ahorrar bateria
+            locationManager.requestSingleUpdate(LocationManager.GPS_PROVIDER, locationListener, null)
 
             // Si se obtuvo la ubicación previa, se crea el enlace de Google Maps con las coordenadas
             val lastLocation: Location? = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
@@ -373,31 +409,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /*
-    //Codificacion relacionada con la conectividad Bluetooth
-    private var mBluetoothHeadset: BluetoothHeadset? = null
-    private val mHeadsetServiceListener = object : BluetoothProfile.ServiceListener {
-        override fun onServiceConnected(profile: Int, headset: BluetoothProfile) {
-            if (profile == BluetoothProfile.HEADSET) {
-                mBluetoothHeadset = headset as BluetoothHeadset
-            }
-        }
-
-        override fun onServiceDisconnected(profile: Int) {
-            if (profile == BluetoothProfile.HEADSET) {
-                mBluetoothHeadset = null
-            }
-        }
-    }
-    */
-
     override fun onDestroy() {
         super.onDestroy()
-        /*
-        mBluetoothHeadset?.let {
-            BluetoothAdapter.getDefaultAdapter()?.closeProfileProxy(BluetoothProfile.HEADSET, it)
-        }
-        */
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
