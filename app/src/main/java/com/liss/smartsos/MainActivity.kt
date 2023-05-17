@@ -7,6 +7,7 @@ import android.view.MenuItem
 
 //importaciones relacionadas a la conectividad bluetooth
 import android.bluetooth.*
+import android.os.AsyncTask
 
 //importaciones relacionadas a la obtencion de contacto de confianza
 import android.provider.ContactsContract
@@ -32,6 +33,7 @@ import androidx.core.content.ContextCompat
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
+import android.util.Log
 import androidx.core.app.ActivityCompat
 import java.util.*
 
@@ -53,8 +55,8 @@ class MainActivity : AppCompatActivity() {
             //exec911()
             //sendSMS("6645333103", "Mensaje de prueba",this)
             //sendSMS("6641873545", "Mensaje de prueba 123 hola",this)
-            Toast.makeText(this, getLocationLink(this), Toast.LENGTH_LONG).show()
-            //getLoc()
+            //Toast.makeText(this, getLocationLink(this), Toast.LENGTH_LONG).show()
+            execSOS()
             //serialScan()
         }
 
@@ -94,6 +96,16 @@ class MainActivity : AppCompatActivity() {
         if (permissionsToRequest.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, permissionsToRequest.toTypedArray(), 1)
         }
+
+        // Verificamos si el permiso de ubicación está concedido para actualizar la ubicacion
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            // Obtenemos el enlace de ubicación
+            val locationLink = getLocationLink(this)
+            if (locationLink.isNotEmpty()) {
+                // Si se obtuvo el enlace de ubicación, lo imprimimos en la consola
+                Log.d("LocationLink", locationLink)
+            }
+        }
     }
 
     // Función para mostrar un diálogo de permisos
@@ -128,6 +140,7 @@ class MainActivity : AppCompatActivity() {
         if (cc != "error")
         {
             sendSMS(cc, "Mensaje de prueba 123"+" "+ubi,this)
+            Toast.makeText(this, "OOF"+ubi, Toast.LENGTH_LONG).show()
         }
         else{
             Toast.makeText(this, "Se necesita indicar un contacto de confianza para enviar mensajes", Toast.LENGTH_LONG).show()
@@ -183,7 +196,7 @@ class MainActivity : AppCompatActivity() {
         // Verificar si tenemos permiso de lectura de contactos
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
             // Si no tenemos permiso, se muestra un mensaje explicando que se requiere el permiso
-            Toast.makeText(this, "Se requiere permiso para obtener el contacto de confianza", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Se requiere permiso de contactos para obtener el contacto de confianza", Toast.LENGTH_SHORT).show()
         } else {
             // Si tenemos permiso, abrir la lista de contactos
             val intent = Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI)
@@ -316,8 +329,9 @@ class MainActivity : AppCompatActivity() {
                     // Cuando se obtiene una nueva ubicación, se crea el enlace de Google Maps con las coordenadas
                     val latitude = location.latitude
                     val longitude = location.longitude
-                    val mapsLink = "https://www.google.com/maps?q=$latitude,$longitude"
+                    val mapsLink = "Actualizacion https://www.google.com/maps?q=$latitude,$longitude"
                     // Imprimimos el enlace a la consola para verificar que se está actualizando correctamente
+                    Log.d("Localizacion inicial", mapsLink)
                 }
 
                 override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {}
@@ -326,16 +340,18 @@ class MainActivity : AppCompatActivity() {
             }
 
             // Registramos el LocationListener para recibir actualizaciones de ubicación cada 5 segundos
-            //locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 0f, locationListener)
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 0f, locationListener)
 
             // Solicitamos una sola actualizacion de ubicación para ahorrar bateria
-            locationManager.requestSingleUpdate(LocationManager.GPS_PROVIDER, locationListener, null)
+            //locationManager.requestSingleUpdate(LocationManager.GPS_PROVIDER, locationListener, null)
 
             // Si se obtuvo la ubicación previa, se crea el enlace de Google Maps con las coordenadas
             val lastLocation: Location? = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
             if (lastLocation != null) {
                 val latitude = lastLocation.latitude
                 val longitude = lastLocation.longitude
+                val mapsLink = "Ultima loc: https://www.google.com/maps?q=$latitude,$longitude"
+                Log.d("LocationLink", mapsLink)
                 return "https://www.google.com/maps?q=$latitude,$longitude"
             }
         }
@@ -344,7 +360,84 @@ class MainActivity : AppCompatActivity() {
         return ""
     }
 
+    //Deteccion Bluetooth Serial
+    private inner class BluetoothReadTask : AsyncTask<String, String, Void>() {
+        private val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+        private var socket: BluetoothSocket? = null
+
+        override fun doInBackground(vararg params: String?): Void? {
+            val address = params[0]
+
+            val device = bluetoothAdapter.getRemoteDevice(address)
+            val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+            socket = device.createRfcommSocketToServiceRecord(uuid)
+            socket?.connect()
+
+            val inputStream = socket?.inputStream
+            val buffer = ByteArray(1024)
+            var bytes: Int
+
+            while (true) {
+                if (isCancelled) {
+                    // La tarea ha sido cancelada, cerramos el socket y salimos del loop
+                    socket?.close()
+                    break
+                }
+
+                bytes = inputStream?.read(buffer) ?: -1
+                if (bytes != -1) {
+                    val message = String(buffer, 0, bytes)
+                    publishProgress(message)
+                }
+            }
+            return null
+        }
+
+        override fun onProgressUpdate(vararg values: String?) {
+            val message = values[0]
+            Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
+            if (message == "1") {
+                execSOS()
+            }
+        }
+
+        override fun onCancelled() {
+            socket?.close()
+        }
+    }
+
     //Comunicacion Bluetooth Serial
+    fun serialScan() {
+        val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+        if (bluetoothAdapter == null) {
+            // El dispositivo no admite Bluetooth
+            return
+        }
+
+        if (!bluetoothAdapter.isEnabled()) {
+            // El Bluetooth no está activado, se puede solicitar al usuario que lo active
+            return
+        }
+
+        val bondedDevices = bluetoothAdapter.bondedDevices
+        var address: String? = null
+        for (device in bondedDevices) {
+            if (device.bluetoothClass.majorDeviceClass == BluetoothClass.Device.Major.UNCATEGORIZED
+                && device.name == "SmartSOS") {
+                // Se ha encontrado el dispositivo deseado
+                address = device.address
+                break
+            }
+        }
+        if (address == null) {
+            // El dispositivo no está emparejado o no se ha encontrado el dispositivo deseado
+            return
+        }
+
+        val readTask = BluetoothReadTask()
+        readTask.execute(address)
+    }
+    /*
     fun serialScan()
     {
         val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
@@ -408,6 +501,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+     */
 
     override fun onDestroy() {
         super.onDestroy()
