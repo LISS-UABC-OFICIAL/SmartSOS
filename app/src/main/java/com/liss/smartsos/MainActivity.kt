@@ -35,6 +35,7 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.util.Log
 import androidx.core.app.ActivityCompat
+import java.io.IOException
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
@@ -56,8 +57,8 @@ class MainActivity : AppCompatActivity() {
             //sendSMS("6645333103", "Mensaje de prueba",this)
             //sendSMS("6641873545", "Mensaje de prueba 123 hola",this)
             //Toast.makeText(this, getLocationLink(this), Toast.LENGTH_LONG).show()
-            execSOS()
-            //serialScan()
+            //execSOS()
+            serialScan()
         }
 
         //BT
@@ -74,6 +75,10 @@ class MainActivity : AppCompatActivity() {
         */
 
     }
+
+    //Variables globales
+    //Localizacion actual
+    var ubi = ""
 
     //Solicitando permisos
     private fun requestPermissions(){
@@ -100,11 +105,7 @@ class MainActivity : AppCompatActivity() {
         // Verificamos si el permiso de ubicación está concedido para actualizar la ubicacion
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             // Obtenemos el enlace de ubicación
-            val locationLink = getLocationLink(this)
-            if (locationLink.isNotEmpty()) {
-                // Si se obtuvo el enlace de ubicación, lo imprimimos en la consola
-                Log.d("LocationLink", locationLink)
-            }
+            ubi = getLocationLink(this)
         }
     }
 
@@ -135,7 +136,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun execSOS(){
-        val ubi = getLocationLink(this)
+        ubi = getLocationLink(this)
         val cc = getSelectedContactNumber()
         if (cc != "error")
         {
@@ -331,7 +332,7 @@ class MainActivity : AppCompatActivity() {
                     val longitude = location.longitude
                     val mapsLink = "Actualizacion https://www.google.com/maps?q=$latitude,$longitude"
                     // Imprimimos el enlace a la consola para verificar que se está actualizando correctamente
-                    Log.d("Localizacion inicial", mapsLink)
+                    Log.d("getLocationLink()","Localizacion inicial: "+mapsLink)
                 }
 
                 override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {}
@@ -350,8 +351,9 @@ class MainActivity : AppCompatActivity() {
             if (lastLocation != null) {
                 val latitude = lastLocation.latitude
                 val longitude = lastLocation.longitude
-                val mapsLink = "Ultima loc: https://www.google.com/maps?q=$latitude,$longitude"
-                Log.d("LocationLink", mapsLink)
+                val mapsLink = "Ultima localizacion registrada: https://www.google.com/maps?q=$latitude,$longitude"
+                // Imprimimos el enlace a la consola para verificar que se está obteniendo correctamente
+                Log.d("getLocationLink()","Localizacion inicial: "+mapsLink)
                 return "https://www.google.com/maps?q=$latitude,$longitude"
             }
         }
@@ -370,25 +372,31 @@ class MainActivity : AppCompatActivity() {
 
             val device = bluetoothAdapter.getRemoteDevice(address)
             val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
-            socket = device.createRfcommSocketToServiceRecord(uuid)
-            socket?.connect()
+            try {
+                socket = device.createRfcommSocketToServiceRecord(uuid)
+                socket?.connect()
 
-            val inputStream = socket?.inputStream
-            val buffer = ByteArray(1024)
-            var bytes: Int
+                val inputStream = socket?.inputStream
+                val buffer = ByteArray(1024)
+                var bytes: Int
 
-            while (true) {
-                if (isCancelled) {
-                    // La tarea ha sido cancelada, cerramos el socket y salimos del loop
-                    socket?.close()
-                    break
+                while (true) {
+                    if (isCancelled) {
+                        // La tarea ha sido cancelada, cerramos el socket y salimos del loop
+                        socket?.close()
+                        break
+                    }
+
+                    bytes = inputStream?.read(buffer) ?: -1
+                    if (bytes != -1) {
+                        val message = String(buffer, 0, bytes)
+                        publishProgress(message)
+                    }
                 }
-
-                bytes = inputStream?.read(buffer) ?: -1
-                if (bytes != -1) {
-                    val message = String(buffer, 0, bytes)
-                    publishProgress(message)
-                }
+            } catch (e: IOException) {
+                // Error al establecer la conexión Bluetooth
+                e.printStackTrace()
+                cancel(true)
             }
             return null
         }
@@ -402,6 +410,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun onCancelled() {
+            socket?.close()
+        }
+
+        override fun onCancelled(result: Void?) {
             socket?.close()
         }
     }
