@@ -53,30 +53,21 @@ class MainActivity : AppCompatActivity() {
         val buttonTest = findViewById<Button>(R.id.button)
         buttonTest.setOnClickListener {
             //Ejecuta la funcion al pulsar el boton
-            //exec911()
-            //sendSMS("6645333103", "Mensaje de prueba",this)
-            //sendSMS("6641873545", "Mensaje de prueba 123 hola",this)
             //Toast.makeText(this, getLocationLink(this), Toast.LENGTH_LONG).show()
-            //execSOS()
+            execSOS()
+        }
+
+        //Boton para activar la deteccion de pulsaciones
+        val buttonSerialScan = findViewById<Button>(R.id.buttonActivar)
+        buttonSerialScan.setOnClickListener{
+            //Ejecuta el escaneo del boton bluetooth
             serialScan()
         }
-
-        //BT
-        /*
-        val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-
-        if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled) {
-            Toast.makeText(this, "Bluetooth no está habilitado", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        bluetoothAdapter.getProfileProxy(this, mHeadsetServiceListener, BluetoothProfile.HEADSET)
-
-        */
-
     }
 
     //Variables globales
+    //Chequeo para evitar que la deteccion de bluetooth se ejecute multiples veces
+    private var isSerialScanRunning = false
     //Localizacion actual
     var ubi = ""
 
@@ -396,9 +387,16 @@ class MainActivity : AppCompatActivity() {
             } catch (e: IOException) {
                 // Error al establecer la conexión Bluetooth
                 e.printStackTrace()
+                Log.d("serialScan()","Error: No se puede emparejar con el dispositivo")
                 cancel(true)
             }
             return null
+        }
+
+        override fun onPreExecute() {
+            super.onPreExecute()
+            isSerialScanRunning = true
+            Log.d("serialScan()","Ejecutando la deteccion serial...")
         }
 
         override fun onProgressUpdate(vararg values: String?) {
@@ -409,25 +407,43 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        override fun onPostExecute(result: Void?) {
+            super.onPostExecute(result)
+            isSerialScanRunning = false
+            Log.d("serialScan()","Deteccion serial ejecutada correctamente")
+        }
+
         override fun onCancelled() {
+            isSerialScanRunning = false
             socket?.close()
         }
 
         override fun onCancelled(result: Void?) {
+            isSerialScanRunning = false
             socket?.close()
         }
     }
 
     //Comunicacion Bluetooth Serial
     fun serialScan() {
+        if (isSerialScanRunning) {
+            // La función ya está en curso, no se ejecuta nuevamente
+            Log.d("serialScan()","Ya se esta ejecutando la deteccion serial, no se necesita ejecutar de nuevo")
+            return
+        }
+
         val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         if (bluetoothAdapter == null) {
             // El dispositivo no admite Bluetooth
+            // Se muestra al usuario el mensaje correspondiente
+            Toast.makeText(this, "El dispositivo no admite bluetooth", Toast.LENGTH_LONG).show()
             return
         }
 
         if (!bluetoothAdapter.isEnabled()) {
             // El Bluetooth no está activado, se puede solicitar al usuario que lo active
+            // Se muestra al usuario el mensaje correspondiente
+            Toast.makeText(this, "Se requiere activar el Bluetooth del dispositivo", Toast.LENGTH_LONG).show()
             return
         }
 
@@ -443,77 +459,13 @@ class MainActivity : AppCompatActivity() {
         }
         if (address == null) {
             // El dispositivo no está emparejado o no se ha encontrado el dispositivo deseado
+            Toast.makeText(this, "Se requiere emparejar la pulsera antes de usar la aplicacion", Toast.LENGTH_LONG).show()
             return
         }
 
         val readTask = BluetoothReadTask()
         readTask.execute(address)
     }
-    /*
-    fun serialScan()
-    {
-        val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-        if (bluetoothAdapter == null)
-        {
-            // El dispositivo no admite Bluetooth
-        }
-        else
-        {
-            if (!bluetoothAdapter.isEnabled())
-            {
-                // El Bluetooth no está activado, se puede solicitar al usuario que lo active
-            }
-            else
-            {
-                // El Bluetooth está activado
-                val bondedDevices = bluetoothAdapter.bondedDevices
-                var address: String? = null
-                for (device in bondedDevices)
-                {
-                    if (device.bluetoothClass.majorDeviceClass == BluetoothClass.Device.Major.UNCATEGORIZED
-                        && device.name == "SmartSOS")
-                    {
-                        // Se ha encontrado el dispositivo deseado
-                        address = device.address
-                        break
-                    }
-                }
-                if (address == null)
-                {
-                    // El dispositivo no está emparejado o no se ha encontrado el dispositivo deseado
-                }
-                else
-                {
-                    // Se ha encontrado la dirección MAC del dispositivo deseado, se puede utilizar para establecer la conexión Bluetooth
-                    val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
-                    val device = bluetoothAdapter.getRemoteDevice(address)
-                    val socket = device.createRfcommSocketToServiceRecord(uuid)
-                    socket.connect()
-
-                    val inputStream = socket.inputStream
-                    val buffer = ByteArray(1024)
-                    var bytes: Int
-
-                    while (true)
-                    {
-                        bytes = inputStream.read(buffer)
-                        val message = String(buffer, 0, bytes)
-                        runOnUiThread {
-                            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
-                            if (message == "1")
-                            {
-                                execSOS()
-                                //exec911()
-                                //sendSMS("6641873545", "Mensaje de prueba 123",this)
-                            }
-                        }
-                    }
-                    socket.close()
-                }
-            }
-        }
-    }
-     */
 
     override fun onDestroy() {
         super.onDestroy()
