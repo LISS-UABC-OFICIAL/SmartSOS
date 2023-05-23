@@ -39,12 +39,21 @@ import androidx.core.content.ContextCompat
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
+import android.graphics.Color
 import android.util.Log
+import android.widget.TextView
 import androidx.core.app.ActivityCompat
+import org.w3c.dom.Text
 import java.io.IOException
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
+
+    //Variables de la nterfaz
+    lateinit var uiPulseraEstado: Button
+    lateinit var uiPulseraNombre: TextView
+    lateinit var uiPulseraDireccion: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -60,6 +69,17 @@ class MainActivity : AppCompatActivity() {
         if (!isAccessibilityServiceEnabled(this, AutoclickerService::class.java)) {
             showAccessibilityPermissionDialog()
         }
+
+        //Interfaz (IMPORTANTE NO CAMBIAR DE LUGAR)
+        uiPulseraEstado = findViewById(R.id.buttonPulseraEstado)
+        uiPulseraEstado.text = "Esperando"
+        uiPulseraEstado.setBackgroundColor(Color.GRAY)
+
+        uiPulseraNombre = findViewById(R.id.pulseraNombre)
+        uiPulseraNombre.text = "Nombre:"
+
+        uiPulseraDireccion = findViewById(R.id.pulseraDireccion)
+        uiPulseraDireccion.text = "Direccion:"
 
         //Boton de prueba para ejecutar la aplicacion 911
         val buttonTest = findViewById<Button>(R.id.button)
@@ -422,6 +442,15 @@ class MainActivity : AppCompatActivity() {
                 val buffer = ByteArray(1024)
                 var bytes: Int
 
+                Log.d("serialScan()","Conectado con el boton")
+                runOnUiThread {
+                    uiPulseraEstado.text = "Conectado"
+                    uiPulseraEstado.setBackgroundColor(Color.GREEN)
+
+                    uiPulseraNombre.text = "Nombre: SmartSOS"
+                    uiPulseraDireccion.text = "Direccion: "+address
+                }
+
                 while (true) {
                     if (isCancelled) {
                         // La tarea ha sido cancelada, cerramos el socket y salimos del loop
@@ -448,6 +477,11 @@ class MainActivity : AppCompatActivity() {
             super.onPreExecute()
             isSerialScanRunning = true
             Log.d("serialScan()","Ejecutando la deteccion serial...")
+            uiPulseraEstado.text = "Emparejando"
+            uiPulseraEstado.setBackgroundColor(Color.BLUE)
+
+            uiPulseraNombre.text = "Nombre: Recibiendo..."
+            uiPulseraDireccion.text = "Direccion: Recibiendo..."
         }
 
         override fun onProgressUpdate(vararg values: String?) {
@@ -467,11 +501,23 @@ class MainActivity : AppCompatActivity() {
         override fun onCancelled() {
             isSerialScanRunning = false
             socket?.close()
+            Log.d("serialScan()","Conexion cerrada")
+            uiPulseraEstado.text = "Esperando"
+            uiPulseraEstado.setBackgroundColor(Color.GRAY)
+
+            uiPulseraNombre.text = "Nombre:"
+            uiPulseraDireccion.text = "Direccion:"
         }
 
         override fun onCancelled(result: Void?) {
             isSerialScanRunning = false
             socket?.close()
+            Log.d("serialScan()","Conexion cerrada")
+            uiPulseraEstado.text = "Esperando"
+            uiPulseraEstado.setBackgroundColor(Color.GRAY)
+
+            uiPulseraNombre.text = "Nombre:"
+            uiPulseraDireccion.text = "Direccion:"
         }
     }
 

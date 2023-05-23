@@ -113,6 +113,7 @@
                 android:textSize="35sp" />
 
             <TextView
+                android:id="@+id/pulseraNombre"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:padding="3dp"
@@ -121,10 +122,11 @@
                 android:textSize="16sp" />
 
             <TextView
+                android:id="@+id/pulseraDireccion"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:padding="3dp"
-                android:text="Estado:"
+                android:text="Direccion:"
 
                 android:textSize="16sp" />
         </LinearLayout>
