@@ -20,6 +20,12 @@ import android.location.Location
 import android.location.LocationManager
 import android.location.LocationListener
 
+//Importaciones relacionadas a las pulsaciones automaticas
+import android.accessibilityservice.AccessibilityService
+import android.view.accessibility.AccessibilityManager
+import android.content.ComponentName
+import android.provider.Settings
+
 //importaciones necesarias
 import android.widget.Button
 import android.widget.Toast
@@ -48,6 +54,12 @@ class MainActivity : AppCompatActivity() {
 
         //Solicitar permisos iniciales
         showPermissionDialog()
+
+        //Solicitar permisos de accesibilidad
+        //Si ya se tienen los permisos no se pregunta otra vez
+        if (!isAccessibilityServiceEnabled(this, AutoclickerService::class.java)) {
+            showAccessibilityPermissionDialog()
+        }
 
         //Boton de prueba para ejecutar la aplicacion 911
         val buttonTest = findViewById<Button>(R.id.button)
@@ -113,6 +125,44 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
+    //Pulsaciones automaticas
+    private fun isAccessibilityServiceEnabled(context: Context, service: Class<out AccessibilityService>): Boolean {
+        val am = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
+        val enabledServices = Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
+        val colonSplitter = enabledServices?.split(':') ?: return false
+        return colonSplitter.any { componentNameString ->
+            val enabledComponent = ComponentName.unflattenFromString(componentNameString)
+            enabledComponent != null && enabledComponent.packageName == context.packageName && enabledComponent.className == service.name
+        }
+    }
+
+    private fun showAccessibilityPermissionDialog() {
+        val builder = AlertDialog.Builder(this)
+        builder.apply {
+            setMessage("Esta aplicación requiere permisos de accesibilidad para funcionar correctamente.")
+            setPositiveButton("Aceptar") { _, _ ->
+                requestAccessibilityPermission()
+            }
+        }
+        val dialog = builder.create()
+        dialog.show()
+    }
+
+    private fun requestAccessibilityPermission() {
+        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+        this.startActivity(intent)
+    }
+
+    private fun startAutoclickerService(context: Context) {
+        if (isAccessibilityServiceEnabled(context, AutoclickerService::class.java)) {
+            val intent = Intent(context, AutoclickerService::class.java)
+            context.startService(intent)
+        } else {
+            // El servicio de accesibilidad no está habilitado, muestra un mensaje de error o solicita al usuario que lo habilite.
+        }
+    }
+
+
     //Ejecutar aplicacion 911
     private fun exec911() {
         //Nombre interno de la aplicacion 911
@@ -120,6 +170,7 @@ class MainActivity : AppCompatActivity() {
         if (launchIntent != null) {
             launchIntent.setClassName("com.c4bc.alerta066m", "com.c4bc.alerta066m.activities.Splash")
             startActivity(launchIntent)
+            startAutoclickerService(getApplicationContext())
         } else {
             //Envia mensaje cuando no se pueda encontrar la aplicacion
             Toast.makeText(this@MainActivity, "La aplicacion no se encuentra o no esta instalada en el dispositivo", Toast.LENGTH_LONG).show()

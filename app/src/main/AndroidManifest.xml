@@ -2,22 +2,29 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!--Permisos requeridos-->
-    <uses-feature android:name="android.hardware.bluetooth" android:required="true"/>
-    <!--Permisos Bluetooth-->
-    <uses-permission android:name="android.permission.BLUETOOTH"/>
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+    <!-- Permisos requeridos -->
+    <uses-feature
+        android:name="android.hardware.bluetooth"
+        android:required="true" />
+    <!-- Permisos Bluetooth -->
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-
-    <!--Permiso para obtener el contacto de confianza-->
-    <uses-permission android:name="android.permission.READ_CONTACTS"/>
-
-    <!--Permiso para enviar SMS-->
-    <uses-permission android:name="android.permission.SEND_SMS"/>
-
-    <!--Permisos de Ubicacion-->
+    <!-- Permiso para obtener el contacto de confianza -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <!-- Permiso para enviar SMS -->
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <!-- Permisos de Ubicacion -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Permiso pra la automatizacion de pulsaciones -->
+    <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
+
+    <!-- Parte requerida para que el launch intent no de valor null ya que android 11 no da esta informacion -->
+    <queries>
+        <package android:name="com.c4bc.alerta066m" />
+        <package android:name="med.track.med" />
+    </queries>
 
     <application
         android:allowBackup="true"
@@ -29,6 +36,18 @@
         android:theme="@style/Theme.SmartSOS"
         tools:targetApi="31">
 
+        <service
+            android:name=".AutoclickerService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService"/>
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config"/>
+        </service>
+
         <activity
             android:name=".MainActivity"
             android:exported="true">
@@ -38,15 +57,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-
-
     </application>
-
-    <!-- Parte requerida para que el launch intent no de valor null ya que android 11 no da esta informacion-->
-    <queries>
-        <package android:name="com.c4bc.alerta066m"/>
-        <package android:name="med.track.med"/>
-    </queries>
 
 </manifest>
