@@ -43,13 +43,12 @@ import android.graphics.Color
 import android.util.Log
 import android.widget.TextView
 import androidx.core.app.ActivityCompat
-import org.w3c.dom.Text
 import java.io.IOException
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
-    //Variables de la nterfaz
+    //Variables de la interfaz
     lateinit var uiPulseraEstado: Button
     lateinit var uiPulseraNombre: TextView
     lateinit var uiPulseraDireccion: TextView
@@ -61,10 +60,18 @@ class MainActivity : AppCompatActivity() {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         setContentView(R.layout.activity_main)
 
-        //Solicitar permisos iniciales
-        showPermissionDialog()
+        //Solicitando permisos iniciales
+        if (permissions.all { permission ->
+                ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+            }) {
+            // Todos los permisos están concedidos
+            // Puedes realizar las operaciones relacionadas con los permisos aquí
+        } else {
+            // Al menos uno de los permisos no está concedido
+            showPermissionDialog()
+        }
 
-        //Solicitar permisos de accesibilidad
+        //Solicitando permisos de accesibilidad
         //Si ya se tienen los permisos no se pregunta otra vez
         if (!isAccessibilityServiceEnabled(this, AutoclickerService::class.java)) {
             showAccessibilityPermissionDialog()
@@ -102,16 +109,16 @@ class MainActivity : AppCompatActivity() {
     private var isSerialScanRunning = false
     //Localizacion actual
     var ubi = ""
+    // Array de permisos a solicitar
+    val permissions = arrayOf(
+        Manifest.permission.BLUETOOTH_CONNECT,
+        Manifest.permission.READ_CONTACTS,
+        Manifest.permission.SEND_SMS,
+        Manifest.permission.ACCESS_FINE_LOCATION
+    )
 
     //Solicitando permisos
     private fun requestPermissions(){
-        // Array de permisos a solicitar
-        val permissions = arrayOf(
-            Manifest.permission.BLUETOOTH_CONNECT,
-            Manifest.permission.READ_CONTACTS,
-            Manifest.permission.SEND_SMS,
-            Manifest.permission.ACCESS_FINE_LOCATION
-        )
         // Comprobar si se tienen todos los permisos necesarios
         val permissionsToRequest = mutableListOf<String>()
         for (permission in permissions) {
