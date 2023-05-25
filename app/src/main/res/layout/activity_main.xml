@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-
+    android:forceDarkAllowed="false"
     tools:context=".MainActivity">
 
     <androidx.cardview.widget.CardView
@@ -53,10 +53,10 @@
 
         <Button
             android:id="@+id/button911Estado"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginStart="270dp"
-            android:text="Instalada" />
+            android:layout_marginStart="240dp"
+            android:text="Instaldada" />
     </androidx.cardview.widget.CardView>
 
     <TextView
@@ -133,9 +133,9 @@
 
         <Button
             android:id="@+id/buttonPulseraEstado"
-            android:layout_width="120dp"
+            android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginStart="270dp"
+            android:layout_marginStart="240dp"
             android:text="Estado" />
     </androidx.cardview.widget.CardView>
 
