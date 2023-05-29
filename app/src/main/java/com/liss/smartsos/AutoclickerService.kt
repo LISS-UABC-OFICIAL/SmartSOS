@@ -9,10 +9,11 @@ import android.view.accessibility.AccessibilityNodeInfo
 class AutoclickerService : AccessibilityService() {
 
     private var isClickPerformed = false
+    private val handler = Handler()
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (!isClickPerformed && event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-            Handler().postDelayed({
+            handler.postDelayed({
                 rootInActiveWindow?.let { rootNode ->
                     val targetNode = findNodeByText(rootNode, "Pánico")
                     targetNode?.let { node ->
@@ -34,11 +35,11 @@ class AutoclickerService : AccessibilityService() {
         for (i in 0 until node.childCount) {
             val childNode = node.getChild(i)
             val targetNode = findNodeByText(childNode, targetText)
-            childNode.recycle()
             if (targetNode != null) {
                 return targetNode
             }
         }
+        node.recycle()
         return null
     }
 
@@ -50,8 +51,8 @@ class AutoclickerService : AccessibilityService() {
         for (i in 0 until node.childCount) {
             val childNode = node.getChild(i)
             performClick(childNode)
-            childNode.recycle()
         }
+        node.recycle()
     }
 
 
