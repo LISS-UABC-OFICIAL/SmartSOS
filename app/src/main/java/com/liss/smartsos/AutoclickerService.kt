@@ -8,23 +8,27 @@ import android.view.accessibility.AccessibilityNodeInfo
 
 class AutoclickerService : AccessibilityService() {
 
-    private var isClickPerformed = false
+    private var isPanicPressed = false
     private val handler = Handler()
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (!isClickPerformed && event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+        if (!isPanicPressed && event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            Log.d("Autoclicker","En la pantalla principal de 911")
             handler.postDelayed({
                 rootInActiveWindow?.let { rootNode ->
                     val targetNode = findNodeByText(rootNode, "Pánico")
                     targetNode?.let { node ->
                         performClick(node)
                         node.recycle()
+                        isPanicPressed = true
+                        Log.d("Autoclicker", "Boton con texto de Panico encontrado")
                     }
-                    isClickPerformed = true
-                    disableSelf()
-                    Log.d("SERVICIO","FINALIZADO")
                 }
             }, 3000)
+        }
+        if(isPanicPressed && event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            Log.d("Autoclicker","En el boton de panico")
+            disableSelf()
         }
     }
 
@@ -54,7 +58,6 @@ class AutoclickerService : AccessibilityService() {
         }
         node.recycle()
     }
-
 
     override fun onInterrupt() {}
 }
