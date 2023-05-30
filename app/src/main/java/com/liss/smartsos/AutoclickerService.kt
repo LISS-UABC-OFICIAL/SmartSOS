@@ -1,10 +1,13 @@
 package com.liss.smartsos
 
 import android.accessibilityservice.AccessibilityService
+import android.graphics.drawable.Drawable
 import android.os.Handler
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import androidx.core.os.postDelayed
+import java.util.*
 
 class AutoclickerService : AccessibilityService() {
 
@@ -28,7 +31,21 @@ class AutoclickerService : AccessibilityService() {
         }
         if(isPanicPressed && event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             Log.d("Autoclicker","En el boton de panico")
-            disableSelf()
+            handler.postDelayed({
+                rootInActiveWindow?.let { rootNode ->
+                    Log.d("123", findNodeByText(rootNode, "Tijuana").toString())
+                    val rButtonTij = findNodeByText(rootNode, "Tijuana").toString()
+                    if (rButtonTij != null) {
+                        val targetNode = findNodeByText(rootNode, "Tijuana")
+                        targetNode?.let { node ->
+                            performSelect(node)
+                            node.recycle()
+                            Log.d("Autoclicker", "Click")
+                            disableSelf()
+                        }
+                    }
+                }
+            }, 1000)
         }
     }
 
@@ -59,5 +76,19 @@ class AutoclickerService : AccessibilityService() {
         node.recycle()
     }
 
+    //Codificacion para el dialogo de alerta si se muestra
+    private fun performSelect(node: AccessibilityNodeInfo){
+        if (node.isClickable) {
+            node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+            return
+        }
+        node.recycle()
+    }
+
     override fun onInterrupt() {}
+
+    override fun onDestroy() {
+        super.onDestroy()
+        disableSelf()
+    }
 }
