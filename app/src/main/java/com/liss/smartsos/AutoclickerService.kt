@@ -1,9 +1,14 @@
 package com.liss.smartsos
 
 import android.accessibilityservice.AccessibilityService
-import android.graphics.drawable.Drawable
+import android.accessibilityservice.GestureDescription
+import android.graphics.Path
+import android.graphics.Rect
 import android.os.Handler
+import android.os.SystemClock
 import android.util.Log
+import android.view.MotionEvent
+import android.view.View
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.core.os.postDelayed
@@ -41,9 +46,16 @@ class AutoclickerService : AccessibilityService() {
                             performSelect(node)
                             node.recycle()
                             Log.d("Autoclicker", "Click")
-                            disableSelf()
                         }
                     }
+                    handler.postDelayed({
+                        Log.d("321", findFirstImageView(rootNode).toString())
+                        val bPanico = findFirstImageView(rootNode)
+                        if(bPanico != null) {
+                            disableSelf()
+                        }
+                        //disableSelf()
+                    },2000)
                 }
             }, 1000)
         }
@@ -83,6 +95,24 @@ class AutoclickerService : AccessibilityService() {
             return
         }
         node.recycle()
+    }
+
+    //Codificacion para la pantalla de boton de panico
+    private fun findFirstImageView(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
+        if (node.className == "android.widget.ImageView") {
+            return node
+        }
+        for (i in 0 until node.childCount) {
+            val childNode = node.getChild(i)
+            if (childNode != null) {
+                val targetNode = findFirstImageView(childNode)
+                if (targetNode != null) {
+                    return targetNode
+                }
+            }
+        }
+        node.recycle()
+        return null
     }
 
     override fun onInterrupt() {}
