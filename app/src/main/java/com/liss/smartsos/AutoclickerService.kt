@@ -53,7 +53,8 @@ class AutoclickerService : AccessibilityService() {
                     handler.postDelayed({
                         Log.d("321", findFirstImageView(rootNode).toString())
                         performLongPressAtCenter()
-                        disableSelf()
+                        //hacer un delay de 10 segundos para terminar el servicio?
+                        //disableSelf()
                     },2000)
                 }
             }, 1000)
@@ -97,6 +98,8 @@ class AutoclickerService : AccessibilityService() {
     }
 
     //Codificacion para la pantalla de boton de panico
+    //El boton de panico es un ImageView y no un boton convencional como se creia, se escanea el
+    //primer imageview que se encuentre ya que es el unico ImageView que hay en esa pantalla
     private fun findFirstImageView(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
         if (node.className == "android.widget.ImageView") {
             return node
@@ -114,6 +117,7 @@ class AutoclickerService : AccessibilityService() {
         return null
     }
 
+    //Codigo que hace la pulsacion larga en el boton de panico
     private fun performLongPressAtCenter() {
         val windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         val displayMetrics = DisplayMetrics()
@@ -130,7 +134,8 @@ class AutoclickerService : AccessibilityService() {
             moveTo(centerX.toFloat(), centerY.toFloat())
         }
 
-        val stroke = GestureDescription.StrokeDescription(path, 0, 1000)
+        //Pulsacion de medio segundo, editar a 4-5 segundos en la version final
+        val stroke = GestureDescription.StrokeDescription(path, 0, 500)
 
         val gestureBuilder = GestureDescription.Builder()
             .addStroke(stroke)

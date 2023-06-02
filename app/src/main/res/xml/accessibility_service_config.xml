@@ -3,5 +3,6 @@
     android:accessibilityFlags="flagDefault"
     android:accessibilityFeedbackType="feedbackGeneric"
     android:canRetrieveWindowContent="true"
+    android:canPerformGestures="true"
     android:notificationTimeout="100"
     android:packageNames="com.c4bc.alerta066m" />
