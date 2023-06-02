@@ -19,7 +19,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <!-- Permiso pra la automatizacion de pulsaciones -->
     <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
-
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <!-- Parte requerida para que el launch intent no de valor null ya que android 11 no da esta informacion -->
     <queries>
         <package android:name="com.c4bc.alerta066m" />

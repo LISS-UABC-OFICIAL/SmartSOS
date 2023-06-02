@@ -2,13 +2,15 @@ package com.liss.smartsos
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
-import android.graphics.Path
-import android.graphics.Rect
+import android.content.Context
+import android.graphics.*
 import android.os.Handler
 import android.os.SystemClock
+import android.util.DisplayMetrics
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
+import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.core.os.postDelayed
@@ -50,11 +52,8 @@ class AutoclickerService : AccessibilityService() {
                     }
                     handler.postDelayed({
                         Log.d("321", findFirstImageView(rootNode).toString())
-                        val bPanico = findFirstImageView(rootNode)
-                        if(bPanico != null) {
-                            disableSelf()
-                        }
-                        //disableSelf()
+                        performLongPressAtCenter()
+                        disableSelf()
                     },2000)
                 }
             }, 1000)
@@ -113,6 +112,43 @@ class AutoclickerService : AccessibilityService() {
         }
         node.recycle()
         return null
+    }
+
+    private fun performLongPressAtCenter() {
+        val windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        val displayMetrics = DisplayMetrics()
+        windowManager.defaultDisplay.getMetrics(displayMetrics)
+        val screenWidth = displayMetrics.widthPixels
+        val screenHeight = displayMetrics.heightPixels
+        Log.d("333w", screenWidth.toString())
+        Log.d("333h", screenWidth.toString())
+
+        val centerX = screenWidth / 2
+        val centerY = screenHeight / 2
+
+        val path = Path().apply {
+            moveTo(centerX.toFloat(), centerY.toFloat())
+        }
+
+        val stroke = GestureDescription.StrokeDescription(path, 0, 1000)
+
+        val gestureBuilder = GestureDescription.Builder()
+            .addStroke(stroke)
+            .build()
+
+        val gestureResultCallback = object : AccessibilityService.GestureResultCallback() {
+            override fun onCompleted(gestureDescription: GestureDescription) {
+                // Pulsación larga completada
+                Log.d("ezpz", "ezpz")
+            }
+
+            override fun onCancelled(gestureDescription: GestureDescription) {
+                // Pulsación larga cancelada
+                Log.d("oof", "oof")
+            }
+        }
+
+        dispatchGesture(gestureBuilder, gestureResultCallback, null)
     }
 
     override fun onInterrupt() {}
