@@ -18,6 +18,10 @@
                 android:id="@+id/contactSelect"
                 android:title="Seleccionar contacto de confianza"
                 app:showAsAction="never" />
+            <item
+                android:id="@+id/citySelect"
+                android:title="Seleccionar ciudad actual"
+                app:showAsAction="never" />
         </menu>
     </item>
 </menu>

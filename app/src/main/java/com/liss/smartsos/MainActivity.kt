@@ -56,7 +56,6 @@ class MainActivity : AppCompatActivity() {
 
     //Configuracion para obtener valores de las preferencias
     lateinit var sharedPref: SharedPreferences
-    var ciudadActual = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,8 +63,6 @@ class MainActivity : AppCompatActivity() {
         //Forzar que el modo oscuro se deshabilite
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         setContentView(R.layout.activity_main)
-
-
 
         //Solicitando permisos iniciales
         if (permissions.all { permission ->
@@ -87,8 +84,13 @@ class MainActivity : AppCompatActivity() {
         //Solicitar ciudad actual al usuario (por alguna razon tiene que estar al ultimo para que salga primero..?)
         sharedPref = applicationContext.getSharedPreferences("cfgSmartSOS", Context.MODE_PRIVATE)
         //Imprimir ciudad actual en la consola
-        Log.d("onCreate()","Ciudad Actual: "+sharedPref.getString("ciudadActual", ""))
-        mostrarDialogoSeleccionCiudad(this,sharedPref)
+        Log.d("DEBUG: MainActivity onCreate()","Ciudad Actual - "+sharedPref.getString("ciudadActual", ""))
+        val ciudadActual = sharedPref.getString("ciudadActual", "")
+        // Verificar si la ciudad actual está vacía
+        if (ciudadActual.isNullOrEmpty()) {
+            // La ciudad actual está vacía, ejecutar la función mostrarDialogoSeleccionCiudad
+            mostrarDialogoSeleccionCiudad(this, sharedPref)
+        }
 
         //Interfaz (IMPORTANTE NO CAMBIAR DE LUGAR)
         uiPulseraEstado = findViewById(R.id.buttonPulseraEstado)
@@ -124,6 +126,8 @@ class MainActivity : AppCompatActivity() {
     var ubi = ""
     // Array de permisos a solicitar
     val permissions = arrayOf(
+        Manifest.permission.BLUETOOTH,
+        Manifest.permission.BLUETOOTH_ADMIN,
         Manifest.permission.BLUETOOTH_CONNECT,
         Manifest.permission.READ_CONTACTS,
         Manifest.permission.SEND_SMS,
@@ -131,7 +135,7 @@ class MainActivity : AppCompatActivity() {
     )
 
     //Pedir al usuario su ciudad actual
-    fun mostrarDialogoSeleccionCiudad(context: Context, sharedPref: SharedPreferences) {
+    private fun mostrarDialogoSeleccionCiudad(context: Context, sharedPref: SharedPreferences) {
         val ciudades = arrayOf("Mexicali", "Tecate", "Tijuana", "Ensenada", "Rosarito")
         val builder = AlertDialog.Builder(context)
         builder.setTitle("Selecciona tu ciudad")
@@ -278,6 +282,10 @@ class MainActivity : AppCompatActivity() {
             }
             R.id.contactView -> {
                 getSelectedContactInfo()
+                return true
+            }
+            R.id.citySelect -> {
+                mostrarDialogoSeleccionCiudad(this, sharedPref)
                 return true
             }
             else -> return super.onOptionsItemSelected(item)
