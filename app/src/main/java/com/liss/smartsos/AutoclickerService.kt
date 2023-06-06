@@ -3,6 +3,7 @@ package com.liss.smartsos
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.content.Context
+import android.content.SharedPreferences
 import android.graphics.*
 import android.os.Handler
 import android.os.SystemClock
@@ -20,7 +21,13 @@ class AutoclickerService : AccessibilityService() {
 
     private var isPanicPressed = false
     private val handler = Handler()
+    private lateinit var sharedPref: SharedPreferences
+    private var cs: String = ""
 
+    override fun onServiceConnected() {
+        sharedPref = applicationContext.getSharedPreferences("cfgSmartSOS", Context.MODE_PRIVATE)
+        cs = sharedPref.getString("ciudadActual", "") ?: ""
+    }
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (!isPanicPressed && event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             Log.d("Autoclicker","En la pantalla principal de 911")
@@ -40,10 +47,12 @@ class AutoclickerService : AccessibilityService() {
             Log.d("Autoclicker","En el boton de panico")
             handler.postDelayed({
                 rootInActiveWindow?.let { rootNode ->
-                    Log.d("123", findNodeByText(rootNode, "Tijuana").toString())
-                    val rButtonTij = findNodeByText(rootNode, "Tijuana").toString()
-                    if (rButtonTij != null) {
-                        val targetNode = findNodeByText(rootNode, "Tijuana")
+                    Log.d("123", findNodeByText(rootNode, cs).toString())
+                    val rButtonTij = findNodeByText(rootNode, cs).toString()
+                    //La condicion tiene que ser "null" ya que el chequeo actual regresa "null" como string si no aparece la seleccion de ciudad
+                    if (rButtonTij != "null") {
+                        Log.d("NODO OBJETIVO",findNodeByText(rootNode, cs).toString())
+                        val targetNode = findNodeByText(rootNode, cs)
                         targetNode?.let { node ->
                             performSelect(node)
                             node.recycle()
@@ -144,12 +153,12 @@ class AutoclickerService : AccessibilityService() {
         val gestureResultCallback = object : AccessibilityService.GestureResultCallback() {
             override fun onCompleted(gestureDescription: GestureDescription) {
                 // Pulsación larga completada
-                Log.d("ezpz", "ezpz")
+                Log.d("performLongPressAtCenter()", "Pulsacion larga completada")
             }
 
             override fun onCancelled(gestureDescription: GestureDescription) {
                 // Pulsación larga cancelada
-                Log.d("oof", "oof")
+                Log.d("performLongPressAtCenter()", "Pulsacion larga cancelada")
             }
         }
 

@@ -39,6 +39,7 @@ import androidx.core.content.ContextCompat
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.SharedPreferences
 import android.graphics.Color
 import android.util.Log
 import android.widget.TextView
@@ -53,12 +54,18 @@ class MainActivity : AppCompatActivity() {
     lateinit var uiPulseraNombre: TextView
     lateinit var uiPulseraDireccion: TextView
 
+    //Configuracion para obtener valores de las preferencias
+    lateinit var sharedPref: SharedPreferences
+    var ciudadActual = ""
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         //Forzar que el modo oscuro se deshabilite
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         setContentView(R.layout.activity_main)
+
+
 
         //Solicitando permisos iniciales
         if (permissions.all { permission ->
@@ -76,6 +83,12 @@ class MainActivity : AppCompatActivity() {
         if (!isAccessibilityServiceEnabled(this, AutoclickerService::class.java)) {
             showAccessibilityPermissionDialog()
         }
+
+        //Solicitar ciudad actual al usuario (por alguna razon tiene que estar al ultimo para que salga primero..?)
+        sharedPref = applicationContext.getSharedPreferences("cfgSmartSOS", Context.MODE_PRIVATE)
+        //Imprimir ciudad actual en la consola
+        Log.d("onCreate()","Ciudad Actual: "+sharedPref.getString("ciudadActual", ""))
+        mostrarDialogoSeleccionCiudad(this,sharedPref)
 
         //Interfaz (IMPORTANTE NO CAMBIAR DE LUGAR)
         uiPulseraEstado = findViewById(R.id.buttonPulseraEstado)
@@ -116,6 +129,20 @@ class MainActivity : AppCompatActivity() {
         Manifest.permission.SEND_SMS,
         Manifest.permission.ACCESS_FINE_LOCATION
     )
+
+    //Pedir al usuario su ciudad actual
+    fun mostrarDialogoSeleccionCiudad(context: Context, sharedPref: SharedPreferences) {
+        val ciudades = arrayOf("Mexicali", "Tecate", "Tijuana", "Ensenada", "Rosarito")
+        val builder = AlertDialog.Builder(context)
+        builder.setTitle("Selecciona tu ciudad")
+        builder.setItems(ciudades) { dialog, which ->
+            val ciudadSeleccionada = ciudades[which]
+            sharedPref.edit().putString("ciudadActual", ciudadSeleccionada).apply()
+            Log.d("mostrarDialogoSeleccionCiudad()", "Ciudad actualizada: " + sharedPref.getString("ciudadActual", ""))
+            dialog.dismiss()
+        }
+        builder.show()
+    }
 
     //Solicitando permisos
     private fun requestPermissions(){
