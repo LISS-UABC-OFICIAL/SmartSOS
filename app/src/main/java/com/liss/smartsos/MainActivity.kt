@@ -64,6 +64,12 @@ class MainActivity : AppCompatActivity() {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         setContentView(R.layout.activity_main)
 
+        //Solicitando permisos de accesibilidad
+        //Si ya se tienen los permisos no se pregunta otra vez
+        if (!isAccessibilityServiceEnabled(this, AutoclickerService::class.java)) {
+            showAccessibilityPermissionDialog()
+        }
+
         //Solicitando permisos iniciales
         if (permissions.all { permission ->
                 ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
@@ -75,16 +81,12 @@ class MainActivity : AppCompatActivity() {
             showPermissionDialog()
         }
 
-        //Solicitando permisos de accesibilidad
-        //Si ya se tienen los permisos no se pregunta otra vez
-        if (!isAccessibilityServiceEnabled(this, AutoclickerService::class.java)) {
-            showAccessibilityPermissionDialog()
-        }
-
         //Solicitar ciudad actual al usuario (por alguna razon tiene que estar al ultimo para que salga primero..?)
         sharedPref = applicationContext.getSharedPreferences("cfgSmartSOS", Context.MODE_PRIVATE)
+        Log.d("DEBUG: MainActivity onCreate()","ID de contacto guardado - "+sharedPref.getString("contactId", "error"))
+        Log.d("DEBUG: MainActivity onCreate()","Numero de contacto guardado - "+getSelectedContactNumber())
         //Imprimir ciudad actual en la consola
-        Log.d("DEBUG: MainActivity onCreate()","Ciudad Actual - "+sharedPref.getString("ciudadActual", ""))
+        Log.d("DEBUG: MainActivity onCreate()","Ciudad guardada - "+sharedPref.getString("ciudadActual", ""))
         val ciudadActual = sharedPref.getString("ciudadActual", "")
         // Verificar si la ciudad actual está vacía
         if (ciudadActual.isNullOrEmpty()) {
@@ -296,6 +298,18 @@ class MainActivity : AppCompatActivity() {
     // Crear una variable para almacenar el ID del contacto seleccionado
     var contactId: String? = null
 
+    // Guardar el contactId en SharedPreferences
+    fun saveContactId(contactId: String?) {
+        val editor = sharedPref.edit()
+        editor.putString("contactId", contactId)
+        editor.apply()
+    }
+
+    // Cargar el contactId desde SharedPreferences
+    fun loadContactId(): String {
+        return sharedPref.getString("contactId", "error") ?: "error"
+    }
+
     // Crear una función para obtener el nombre y número de teléfono del contacto seleccionado
     fun getContactInfo() {
         // Verificar si tenemos permiso de lectura de contactos
@@ -311,20 +325,23 @@ class MainActivity : AppCompatActivity() {
 
     // Crear una función para obtener el nombre y número de teléfono del contacto seleccionado usando el ID
     fun getSelectedContactInfo() {
+        // Cargar el contactId desde SharedPreferences
+        contactId = loadContactId()
+
         // Verificar si tenemos el ID del contacto seleccionado
-        if (contactId == null) {
+        if (contactId == "error") {
             // Si no tenemos el ID, mostrar un mensaje de error
             val contactMsgShow = AlertDialog.Builder(this)
-            contactMsgShow .setTitle("Hubo un problema")
-            contactMsgShow .setMessage("Aun no se ha asignado un contacto de confianza")
-            contactMsgShow .setPositiveButton("Aceptar") { dialog, which ->
+            contactMsgShow.setTitle("Hubo un problema")
+            contactMsgShow.setMessage("Aun no se ha asignado un contacto de confianza")
+            contactMsgShow.setPositiveButton("Aceptar") { dialog, which ->
                 // Acción que se realiza al pulsar el botón "Aceptar"
             }
-            contactMsgShow .setNegativeButton("Asignar contacto") { dialog, which ->
+            contactMsgShow.setNegativeButton("Asignar contacto") { dialog, which ->
                 // Acción que se realiza al pulsar el botón "Editar"
                 getContactInfo()
             }
-            val dialog = contactMsgShow .create()
+            val dialog = contactMsgShow.create()
             dialog.show()
         } else {
             val cursor = contentResolver.query(
@@ -340,20 +357,19 @@ class MainActivity : AppCompatActivity() {
                     val phoneNumber = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
                     // Usar el nombre y número de teléfono como sea necesario
 
-                    //Mostrar un mensaje con el nombre y numeros obtenidos
+                    // Mostrar un mensaje con el nombre y números obtenidos
                     val contactMsgShow = AlertDialog.Builder(this)
-                    contactMsgShow .setTitle("Contacto de confianza actual")
-                    contactMsgShow .setMessage("$name $phoneNumber")
-                    contactMsgShow .setPositiveButton("Aceptar") { dialog, which ->
+                    contactMsgShow.setTitle("Contacto de confianza actual")
+                    contactMsgShow.setMessage("$name $phoneNumber")
+                    contactMsgShow.setPositiveButton("Aceptar") { dialog, which ->
                         // Acción que se realiza al pulsar el botón "Aceptar"
                     }
-                    contactMsgShow .setNegativeButton("Editar contacto") { dialog, which ->
+                    contactMsgShow.setNegativeButton("Editar contacto") { dialog, which ->
                         // Acción que se realiza al pulsar el botón "Editar"
                         getContactInfo()
                     }
-                    val dialog = contactMsgShow .create()
+                    val dialog = contactMsgShow.create()
                     dialog.show()
-
                 }
                 cursor.close()
             }
@@ -361,8 +377,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun getSelectedContactNumber(): String {
+        // Cargar el contactId desde SharedPreferences
+        contactId = loadContactId()
+
         // Verificar si tenemos el ID del contacto seleccionado
-        if (contactId == null) {
+        if (contactId == "error") {
             // Si no tenemos el ID, mostrar un mensaje de error
             return "error"
         } else {
@@ -376,6 +395,7 @@ class MainActivity : AppCompatActivity() {
             cursor?.let {
                 if (cursor.moveToFirst()) {
                     val phoneNumber = cursor.getString(cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER))
+                    cursor.close()
                     return phoneNumber
                 }
                 cursor.close()
@@ -394,9 +414,11 @@ class MainActivity : AppCompatActivity() {
                 cursor?.let {
                     if (cursor.moveToFirst()) {
                         contactId = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID))
+                        // Guardar el contactId en SharedPreferences
+                        saveContactId(contactId)
                     }
                     cursor.close()
-                    Toast.makeText(this, "Contacto de confianza guardado: "+getSelectedContactNumber(), Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "Contacto de confianza guardado: " + getSelectedContactNumber(), Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -445,7 +467,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             // Registramos el LocationListener para recibir actualizaciones de ubicación cada 5 segundos
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5000, 0f, locationListener)
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 3000, 0f, locationListener)
 
             // Solicitamos una sola actualizacion de ubicación para ahorrar bateria
             //locationManager.requestSingleUpdate(LocationManager.GPS_PROVIDER, locationListener, null)
