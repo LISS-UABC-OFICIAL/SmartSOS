@@ -41,6 +41,7 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.SharedPreferences
 import android.graphics.Color
+import android.net.Uri
 import android.util.Log
 import android.widget.TextView
 import androidx.core.app.ActivityCompat
@@ -76,6 +77,7 @@ class MainActivity : AppCompatActivity() {
             }) {
             // Todos los permisos están concedidos
             // Puedes realizar las operaciones relacionadas con los permisos aquí
+            ubi = getLocationLink(this)
         } else {
             // Al menos uno de los permisos no está concedido
             showPermissionDialog()
@@ -164,12 +166,6 @@ class MainActivity : AppCompatActivity() {
         if (permissionsToRequest.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, permissionsToRequest.toTypedArray(), 1)
         }
-
-        // Verificamos si el permiso de ubicación está concedido para actualizar la ubicacion
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            // Obtenemos el enlace de ubicación
-            ubi = getLocationLink(this)
-        }
     }
 
     // Función para mostrar un diálogo de permisos
@@ -183,6 +179,42 @@ class MainActivity : AppCompatActivity() {
         }
         val dialog = builder.create()
         dialog.show()
+    }
+
+    // Función para mostrar un diálogo cuando no se aceptaron los permisos previamente
+    private fun showPermissionErrorDialog() {
+        val builder = AlertDialog.Builder(this)
+        builder.apply {
+            setTitle("Hubo un problema")
+            setMessage("Uno de los permisos no se ha aceptado anteriormente, es necesario aceptar los permisos manualmente y reiniciar la aplicacion. De lo contrario no se puede garantizar un correcto funcionamiento de la aplicacion.")
+            setPositiveButton("Aceptar") { _, _ ->
+                // Abrir la configuración de la aplicación para que el usuario pueda otorgar los permisos manualmente
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                val uri = Uri.fromParts("package", packageName, null)
+                intent.data = uri
+                startActivity(intent)
+            }
+        }
+        val dialog = builder.create()
+        dialog.show()
+    }
+
+    // Función para manejar la respuesta de la solicitud de permisos
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 1) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // El permiso de ubicación fue concedido, llamamos a getLocationLink()
+                ubi = getLocationLink(this)
+            }
+            else{
+                // Comprobamos por lo menos se obtuvo el permiso de ubicación y llamamos a getLocationLink()
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    ubi = getLocationLink(this)
+                }
+                showPermissionErrorDialog()
+            }
+        }
     }
 
     //Pulsaciones automaticas
@@ -219,6 +251,7 @@ class MainActivity : AppCompatActivity() {
             context.startService(intent)
         } else {
             // El servicio de accesibilidad no está habilitado, muestra un mensaje de error o solicita al usuario que lo habilite.
+            Toast.makeText(context, "El servicio de accesibilidad no esta habilitado, no se puede hacer la ejecucion automatica correctamente", Toast.LENGTH_SHORT).show()
         }
     }
 
