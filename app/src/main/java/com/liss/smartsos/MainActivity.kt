@@ -20,6 +20,10 @@ import android.location.Location
 import android.location.LocationManager
 import android.location.LocationListener
 
+//Importaciones relacionadas al encendido de pantalla
+import android.os.PowerManager
+import android.view.WindowManager
+
 //Importaciones relacionadas a las pulsaciones automaticas
 import android.accessibilityservice.AccessibilityService
 import android.view.accessibility.AccessibilityManager
@@ -42,6 +46,7 @@ import android.app.AlertDialog
 import android.content.SharedPreferences
 import android.graphics.Color
 import android.net.Uri
+import android.os.Handler
 import android.util.Log
 import android.widget.TextView
 import androidx.core.app.ActivityCompat
@@ -112,7 +117,8 @@ class MainActivity : AppCompatActivity() {
         buttonTest.setOnClickListener {
             //Ejecuta la funcion al pulsar el boton
             //Toast.makeText(this, getLocationLink(this), Toast.LENGTH_LONG).show()
-            execSOS()
+            ejecutarConDelay(this)
+            //execSOS()
         }
 
         //Boton para activar la deteccion de pulsaciones
@@ -324,6 +330,54 @@ class MainActivity : AppCompatActivity() {
                 return true
             }
             else -> return super.onOptionsItemSelected(item)
+        }
+    }
+    fun ejecutarConDelay(context: Context) {
+        val handler = Handler()
+        handler.postDelayed({
+            desbloquearPantalla(context)
+            execSOS()
+        }, 7000) // Delay de 5000 milisegundos (5 segundos)
+    }
+
+    fun desbloquearPantalla(context: Context) {
+        // Verificar si la pantalla ya está encendida
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+        if (!powerManager.isInteractive) {
+            // Encender la pantalla
+            encenderPantalla(context)
+        }
+    }
+
+    //Encender la pantalla
+    fun encenderPantalla(context: Context) {
+        // Obtener el servicio de administración de energía
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+
+        // Verificar si la pantalla ya está encendida
+        if (!powerManager.isInteractive) {
+            // Obtener una referencia al administrador de ventanas
+            val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+
+            // Crear una nueva ventana para encender la pantalla
+            val wakeLock = powerManager.newWakeLock(
+                PowerManager.FULL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                "SmartSOS:SmartSOSWakeLock"
+            )
+
+            // Adquirir el bloqueo de la pantalla
+            wakeLock.acquire()
+
+            // Liberar el bloqueo después de un corto período de tiempo (por ejemplo, 5 segundos)
+            wakeLock.release(5000)
+
+            // Encender la pantalla estableciendo el brillo a 0
+            val activity = context as? Activity
+            activity?.window?.let { window ->
+                val layoutParams = window.attributes
+                layoutParams.screenBrightness = 0f
+                window.attributes = layoutParams
+            }
         }
     }
 
