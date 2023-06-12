@@ -269,6 +269,7 @@ class MainActivity : AppCompatActivity() {
         if (launchIntent != null) {
             launchIntent.setClassName("com.c4bc.alerta066m", "com.c4bc.alerta066m.activities.Splash")
             startActivity(launchIntent)
+            startService(Intent(this, DisableTouchService::class.java))
             startAutoclickerService(getApplicationContext())
         } else {
             //Envia mensaje cuando no se pueda encontrar la aplicacion

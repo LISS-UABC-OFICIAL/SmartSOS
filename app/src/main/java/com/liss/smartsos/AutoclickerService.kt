@@ -3,6 +3,7 @@ package com.liss.smartsos
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.*
 import android.os.Handler
@@ -20,6 +21,7 @@ import java.util.*
 class AutoclickerService : AccessibilityService() {
 
     private var isPanicPressed = false
+    private var isServiceRunningAlready = false
     private val handler = Handler()
     private lateinit var sharedPref: SharedPreferences
     private var cs: String = ""
@@ -29,8 +31,10 @@ class AutoclickerService : AccessibilityService() {
         cs = sharedPref.getString("ciudadActual", "") ?: ""
     }
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        //agregar && !isServiceRunningAlready en caso de que sea necesario
         if (!isPanicPressed && event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             Log.d("Autoclicker","En la pantalla principal de 911")
+            isServiceRunningAlready = true
             handler.postDelayed({
                 rootInActiveWindow?.let { rootNode ->
                     val targetNode = findNodeByText(rootNode, "Pánico")
@@ -39,6 +43,11 @@ class AutoclickerService : AccessibilityService() {
                         node.recycle()
                         isPanicPressed = true
                         Log.d("Autoclicker", "Boton con texto de Panico encontrado")
+                        if(isServiceRunningAlready){
+                            //Deshabilita el bloqueo de pulsaciones por parte del usuario
+                            val intent = Intent(applicationContext, DisableTouchService::class.java)
+                            stopService(intent)
+                        }
                     }
                 }
             }, 3000)
