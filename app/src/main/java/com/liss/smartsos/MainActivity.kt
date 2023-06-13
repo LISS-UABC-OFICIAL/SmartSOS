@@ -1,13 +1,11 @@
 package com.liss.smartsos
 
 import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 
 //importaciones relacionadas a la conectividad bluetooth
 import android.bluetooth.*
-import android.os.AsyncTask
 
 //importaciones relacionadas a la obtencion de contacto de confianza
 import android.provider.ContactsContract
@@ -21,7 +19,6 @@ import android.location.LocationManager
 import android.location.LocationListener
 
 //Importaciones relacionadas al encendido de pantalla
-import android.os.PowerManager
 import android.view.WindowManager
 
 //Importaciones relacionadas a las pulsaciones automaticas
@@ -46,7 +43,7 @@ import android.app.AlertDialog
 import android.content.SharedPreferences
 import android.graphics.Color
 import android.net.Uri
-import android.os.Handler
+import android.os.*
 import android.util.Log
 import android.widget.TextView
 import androidx.core.app.ActivityCompat
@@ -74,6 +71,16 @@ class MainActivity : AppCompatActivity() {
         //Si ya se tienen los permisos no se pregunta otra vez
         if (!isAccessibilityServiceEnabled(this, AutoclickerService::class.java)) {
             showAccessibilityPermissionDialog()
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_DENIED) {
+                showLocationPermanentPermissionDialog()
+            } else {
+                // El permiso ya ha sido concedido
+            }
+        } else {
+            // El permiso no es necesario en versiones anteriores a Android Q
         }
 
         //Solicitando permisos iniciales
@@ -249,6 +256,23 @@ class MainActivity : AppCompatActivity() {
     private fun requestAccessibilityPermission() {
         val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
         this.startActivity(intent)
+    }
+
+    //Pregunta y pide el permiso de localizacion permanente
+    private fun showLocationPermanentPermissionDialog(){
+        val builder = AlertDialog.Builder(this)
+        builder.apply {
+            setMessage("Es necesario que el permiso de ubicacion se encuentre en Permitir todo el tiempo para que la aplicacion funcione correctamente.")
+            setPositiveButton("Aceptar") { _, _ ->
+                requestLocationPermanent()
+            }
+        }
+        val dialog = builder.create()
+        dialog.show()
+    }
+
+    private fun requestLocationPermanent(){
+        requestPermissions(arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION), 33)
     }
 
     private fun startAutoclickerService(context: Context) {
