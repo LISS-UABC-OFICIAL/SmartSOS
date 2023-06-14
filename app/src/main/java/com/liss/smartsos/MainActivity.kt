@@ -67,6 +67,21 @@ class MainActivity : AppCompatActivity() {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         setContentView(R.layout.activity_main)
 
+        //Solicitando permisos para mostrar sobre apps
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (Settings.canDrawOverlays(this)) {
+                // El permiso ya ha sido concedido
+                // Puedes realizar las acciones correspondientes aquí
+            } else {
+                // El permiso no ha sido concedido
+                showOverlayPermissionDialog()
+            }
+        } else {
+            // Versiones de Android anteriores a Marshmallow (API nivel 23)
+            // El permiso se considera concedido
+            // Puedes realizar las acciones correspondientes aquí
+        }
+
         //Solicitando permisos de accesibilidad
         //Si ya se tienen los permisos no se pregunta otra vez
         if (!isAccessibilityServiceEnabled(this, AutoclickerService::class.java)) {
@@ -139,6 +154,8 @@ class MainActivity : AppCompatActivity() {
     //Variables globales
     //Chequeo para evitar que la deteccion de bluetooth se ejecute multiples veces
     private var isSerialScanRunning = false
+    //Chequeo para evitar que la deteccion de la pulsacion se detecte multiples veces, interrumpiendo el proceso automatico
+    private var isButtonPressDetected = false
     //Localizacion actual
     var ubi = ""
     // Array de permisos a solicitar
@@ -275,6 +292,24 @@ class MainActivity : AppCompatActivity() {
         requestPermissions(arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION), 33)
     }
 
+    //Codificacion necesaria en la deshabilitacion de pulsaciones por parte del usuario
+    private fun showOverlayPermissionDialog(){
+        val builder = AlertDialog.Builder(this)
+        builder.apply {
+            setMessage("Es necesario que el permiso de Mostrar sobre otras apps se active para que la aplicacion funcione correctamente.")
+            setPositiveButton("Aceptar") { _, _ ->
+                requestOverlayPermission()
+            }
+        }
+        val dialog = builder.create()
+        dialog.show()
+    }
+    private fun requestOverlayPermission() {
+        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+        startActivityForResult(intent, 343)
+    }
+
+    //Iniciar el servicio autoclicker
     private fun startAutoclickerService(context: Context) {
         if (isAccessibilityServiceEnabled(context, AutoclickerService::class.java)) {
             val intent = Intent(context, AutoclickerService::class.java)
@@ -292,8 +327,11 @@ class MainActivity : AppCompatActivity() {
         val launchIntent = packageManager.getLaunchIntentForPackage("com.c4bc.alerta066m")
         if (launchIntent != null) {
             launchIntent.setClassName("com.c4bc.alerta066m", "com.c4bc.alerta066m.activities.Splash")
+            //Ejecuta la app 911MovilBC
             startActivity(launchIntent)
+            //Ejecuta el servicio que deshabilita las pulsaciones del usuario en caso de que el telefono movil se encuentre en el bolsillo
             startService(Intent(this, DisableTouchService::class.java))
+            //Ejecuta el servicio encargado de las pulsaciones automaticas
             startAutoclickerService(getApplicationContext())
         } else {
             //Envia mensaje cuando no se pueda encontrar la aplicacion
@@ -312,6 +350,7 @@ class MainActivity : AppCompatActivity() {
         else{
             Toast.makeText(this, "Se necesita indicar un contacto de confianza para enviar mensajes", Toast.LENGTH_LONG).show()
         }
+        //Hacer un chequeo de opcion aqui?
         exec911()
     }
 
@@ -534,6 +573,16 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+
+        //Mostrar sobre otras apps
+        if (requestCode == 343) {
+            if (Settings.canDrawOverlays(this)) {
+                // El permiso ha sido concedido por el usuario
+            } else {
+                // El permiso ha sido denegado por el usuario
+                showPermissionErrorDialog()
+            }
+        }
     }
 
     //Enviar SMS
@@ -663,8 +712,21 @@ class MainActivity : AppCompatActivity() {
         override fun onProgressUpdate(vararg values: String?) {
             val message = values[0]
             Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
-            if (message == "1") {
+            if (message == "1" && isButtonPressDetected == false) {
+                desbloquearPantalla(this@MainActivity)
                 execSOS()
+                //Actualmente el boton manda multiples 1, solo hacemos caso a uno
+                isButtonPressDetected = true
+
+
+                //Comentar el codigo de abajo en caso de que no se quieran permitir multiples pulsaciones (de por si se supone que no es un juguete)
+                val handler = Handler()
+                handler.postDelayed({
+                    //resetea la variable para que se puedan recibir pulsaciones otra vez
+                    isButtonPressDetected = false
+                }, 10000) // Delay de 10000 milisegundos (10 segundos)
+
+
             }
         }
 
