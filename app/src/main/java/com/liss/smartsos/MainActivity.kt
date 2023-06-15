@@ -112,6 +112,8 @@ class MainActivity : AppCompatActivity() {
 
         //Solicitar ciudad actual al usuario (por alguna razon tiene que estar al ultimo para que salga primero..?)
         sharedPref = applicationContext.getSharedPreferences("cfgSmartSOS", Context.MODE_PRIVATE)
+        Log.d("DEBUG: MainActivity onCreate()","Automatizacion ejecutandose? - "+sharedPref.getString("autoExec", "no"))
+        sharedPref.edit().putString("autoExec", "no").apply()
         Log.d("DEBUG: MainActivity onCreate()","ID de contacto guardado - "+sharedPref.getString("contactId", "error"))
         Log.d("DEBUG: MainActivity onCreate()","Numero de contacto guardado - "+getSelectedContactNumber())
         //Imprimir ciudad actual en la consola
@@ -348,6 +350,7 @@ class MainActivity : AppCompatActivity() {
         //Nombre interno de la aplicacion 911
         val launchIntent = packageManager.getLaunchIntentForPackage("com.c4bc.alerta066m")
         if (launchIntent != null) {
+            sharedPref.edit().putString("autoExec", "si").apply()
             launchIntent.setClassName("com.c4bc.alerta066m", "com.c4bc.alerta066m.activities.Splash")
             //Ejecuta la app 911MovilBC
             startActivity(launchIntent)
@@ -387,6 +390,7 @@ class MainActivity : AppCompatActivity() {
         //Nombre interno de la aplicacion MedTrack
         val launchIntent2 = packageManager.getLaunchIntentForPackage("med.track.med")
         if (launchIntent2 != null) {
+            sharedPref.edit().putString("autoExec", "si").apply()
             launchIntent2.setClassName("med.track.med", "io.ionic.starter.MainActivity")
             startActivity(launchIntent2)
             
@@ -835,6 +839,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        sharedPref.edit().putString("autoExec", "no").apply()
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {

@@ -26,20 +26,22 @@ class AutoclickerService : AccessibilityService() {
     private lateinit var sharedPref: SharedPreferences
     private var cs: String = ""
     private var ma: String = ""
+    private var ae: String = ""
 
     override fun onServiceConnected() {
         sharedPref = applicationContext.getSharedPreferences("cfgSmartSOS", Context.MODE_PRIVATE)
         cs = sharedPref.getString("ciudadActual", "") ?: ""
         ma = sharedPref.getString("modoActivo", "911MovilBC") ?: "911MovilBC"
+        ae = sharedPref.getString("autoExec", "no") ?: "no"
     }
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         //NECESARIO SI EL USUARIO CAMBIA DE APLICACION - Obtener nuevamente la app que se selecciono para usar
         ma = sharedPref.getString("modoActivo", "911MovilBC") ?: "911MovilBC"
-
+        ae = sharedPref.getString("autoExec", "no") ?: "no"
 
         //Automatizacion para 911MovilBC
         //agregar && !isServiceRunningAlready en caso de que sea necesario
-        if (!isPanicPressed && ma == "911MovilBC" && event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+        if (!isPanicPressed && ma == "911MovilBC" && ae == "si" && event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             Log.d("Autoclicker","En la pantalla principal de 911")
             isServiceRunningAlready = true
             handler.postDelayed({
@@ -59,7 +61,7 @@ class AutoclickerService : AccessibilityService() {
                 }
             }, 3000)
         }
-        if(isPanicPressed && ma == "911MovilBC" && event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+        if(isPanicPressed && ma == "911MovilBC" && ae == "si" && event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             Log.d("Autoclicker","En el boton de panico")
             handler.postDelayed({
                 rootInActiveWindow?.let { rootNode ->
@@ -84,7 +86,11 @@ class AutoclickerService : AccessibilityService() {
                         Log.d("321", findFirstImageView(rootNode).toString())
                         performLongPressAtCenter()
                         //hacer un delay de 10 segundos para terminar el servicio?
-                        //disableSelf()
+                        handler.postDelayed({
+                            Log.d("Autoclicker","Proceso 911MovilBC terminado")
+                            sharedPref.edit().putString("autoExec", "no").apply()
+                            disableSelf()
+                        },10000)
                     },2000)
                 }
             }, 1000)
@@ -92,7 +98,7 @@ class AutoclickerService : AccessibilityService() {
 
 
         //Automatizacion para Med-Track
-        if (!isPanicPressed && ma == "Med-Track" && event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+        if (!isPanicPressed && ma == "Med-Track" && ae == "si" && event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             Log.d("Autoclicker","En la pantalla principal de Med-Track")
 
             handler.postDelayed({
@@ -108,10 +114,11 @@ class AutoclickerService : AccessibilityService() {
                 }
             }, 4000)
         }
-        if (isPanicPressed && ma == "Med-Track" && event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+        if (isPanicPressed && ma == "Med-Track" && ae == "si" && event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             Log.d("Autoclicker","Terminando proceso Med-Track")
             handler.postDelayed({
                 Log.d("Autoclicker","Proceso Med-Track terminado")
+                sharedPref.edit().putString("autoExec", "no").apply()
                 disableSelf()
             }, 4000)
         }
