@@ -25,14 +25,21 @@ class AutoclickerService : AccessibilityService() {
     private val handler = Handler()
     private lateinit var sharedPref: SharedPreferences
     private var cs: String = ""
+    private var ma: String = ""
 
     override fun onServiceConnected() {
         sharedPref = applicationContext.getSharedPreferences("cfgSmartSOS", Context.MODE_PRIVATE)
         cs = sharedPref.getString("ciudadActual", "") ?: ""
+        ma = sharedPref.getString("modoActivo", "911MovilBC") ?: "911MovilBC"
     }
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        //NECESARIO SI EL USUARIO CAMBIA DE APLICACION - Obtener nuevamente la app que se selecciono para usar
+        ma = sharedPref.getString("modoActivo", "911MovilBC") ?: "911MovilBC"
+
+
+        //Automatizacion para 911MovilBC
         //agregar && !isServiceRunningAlready en caso de que sea necesario
-        if (!isPanicPressed && event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+        if (!isPanicPressed && ma == "911MovilBC" && event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             Log.d("Autoclicker","En la pantalla principal de 911")
             isServiceRunningAlready = true
             handler.postDelayed({
@@ -52,7 +59,7 @@ class AutoclickerService : AccessibilityService() {
                 }
             }, 3000)
         }
-        if(isPanicPressed && event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+        if(isPanicPressed && ma == "911MovilBC" && event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             Log.d("Autoclicker","En el boton de panico")
             handler.postDelayed({
                 rootInActiveWindow?.let { rootNode ->
@@ -62,6 +69,11 @@ class AutoclickerService : AccessibilityService() {
                     if (rButtonTij != "null") {
                         Log.d("NODO OBJETIVO",findNodeByText(rootNode, cs).toString())
                         val targetNode = findNodeByText(rootNode, cs)
+                        /*
+                        if (cs == "" ||cs == "null"){
+                            targetNode = findNodeByText(rootNode, "Tijuana")
+                        }
+                        */
                         targetNode?.let { node ->
                             performSelect(node)
                             node.recycle()
@@ -76,6 +88,32 @@ class AutoclickerService : AccessibilityService() {
                     },2000)
                 }
             }, 1000)
+        }
+
+
+        //Automatizacion para Med-Track
+        if (!isPanicPressed && ma == "Med-Track" && event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            Log.d("Autoclicker","En la pantalla principal de Med-Track")
+
+            handler.postDelayed({
+                rootInActiveWindow?.let { rootNode ->
+                    val targetNode = findNodeByText(rootNode, "¡Estoy en peligro!")
+                    Log.d("Autoclicker", "Boton con texto de ¡Estoy en peligro! encontrado")
+                    targetNode?.let { node ->
+                        performClick(node)
+                        node.recycle()
+                        isPanicPressed = true
+                        Log.d("Autoclicker", "Click")
+                    }
+                }
+            }, 4000)
+        }
+        if (isPanicPressed && ma == "Med-Track" && event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            Log.d("Autoclicker","Terminando proceso Med-Track")
+            handler.postDelayed({
+                Log.d("Autoclicker","Proceso Med-Track terminado")
+                disableSelf()
+            }, 4000)
         }
     }
 

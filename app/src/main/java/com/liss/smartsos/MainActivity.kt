@@ -115,6 +115,7 @@ class MainActivity : AppCompatActivity() {
         Log.d("DEBUG: MainActivity onCreate()","ID de contacto guardado - "+sharedPref.getString("contactId", "error"))
         Log.d("DEBUG: MainActivity onCreate()","Numero de contacto guardado - "+getSelectedContactNumber())
         //Imprimir ciudad actual en la consola
+        Log.d("DEBUG: MainActivity onCreate()","Modo activo - "+sharedPref.getString("modoActivo", "911MovilBC"))
         Log.d("DEBUG: MainActivity onCreate()","Ciudad guardada - "+sharedPref.getString("ciudadActual", ""))
         val ciudadActual = sharedPref.getString("ciudadActual", "")
         // Verificar si la ciudad actual está vacía
@@ -149,6 +150,13 @@ class MainActivity : AppCompatActivity() {
             //Ejecuta el escaneo del boton bluetooth
             serialScan()
         }
+
+        //Boton para elegir app a utilizar
+        val buttonAppSelect = findViewById<Button>(R.id.buttonElegirApp)
+        buttonAppSelect.setOnClickListener{
+            //Ejecuta el escaneo del boton bluetooth
+            mostrarDialogoSeleccionAplicacion(this,sharedPref)
+        }
     }
 
     //Variables globales
@@ -167,6 +175,20 @@ class MainActivity : AppCompatActivity() {
         Manifest.permission.SEND_SMS,
         Manifest.permission.ACCESS_FINE_LOCATION
     )
+
+    //Pedir al usuario la aplicacion a utilizar
+    private fun mostrarDialogoSeleccionAplicacion(context: Context, sharedPref: SharedPreferences) {
+        val modos = arrayOf("911MovilBC", "Boton Emergencia Tijuana","Med-Track", "Enviar SMS solamente")
+        val builder = AlertDialog.Builder(context)
+        builder.setTitle("Selecciona aplicacion a utilizar")
+        builder.setItems(modos) { dialog, which ->
+            val modoSeleccionado = modos[which]
+            sharedPref.edit().putString("modoActivo", modoSeleccionado).apply()
+            Log.d("mostrarDialogoSeleccionAplicacion()", "Modo actualizado: " + sharedPref.getString("modoActivo", "911MovilBC"))
+            dialog.dismiss()
+        }
+        builder.show()
+    }
 
     //Pedir al usuario su ciudad actual
     private fun mostrarDialogoSeleccionCiudad(context: Context, sharedPref: SharedPreferences) {
@@ -342,16 +364,22 @@ class MainActivity : AppCompatActivity() {
     private fun execSOS(){
         ubi = getLocationLink(this)
         val cc = getSelectedContactNumber()
+        val ma = sharedPref.getString("modoActivo", "911MovilBC")
         if (cc != "error")
         {
-            sendSMS(cc, "Mensaje de prueba 123"+" "+ubi,this)
-            Toast.makeText(this, "OOF"+ubi, Toast.LENGTH_LONG).show()
+            sendSMS(cc, "¡Necesito Ayuda!"+" "+ubi,this)
+            //Toast.makeText(this, "OOF"+ubi, Toast.LENGTH_LONG).show()
         }
         else{
             Toast.makeText(this, "Se necesita indicar un contacto de confianza para enviar mensajes", Toast.LENGTH_LONG).show()
         }
         //Hacer un chequeo de opcion aqui?
-        exec911()
+        if(ma=="911MovilBC"){
+            exec911()
+        }
+        if(ma=="Med-Track"){
+            execMedTrack()
+        }
     }
 
     //Ejecutar aplicacion MedTrak
@@ -361,6 +389,9 @@ class MainActivity : AppCompatActivity() {
         if (launchIntent2 != null) {
             launchIntent2.setClassName("med.track.med", "io.ionic.starter.MainActivity")
             startActivity(launchIntent2)
+            
+            //Ejecuta el servicio encargado de las pulsaciones automaticas
+            startAutoclickerService(getApplicationContext())
         } else {
             //Envia mensaje cuando no se pueda encontrar la aplicacion
             Toast.makeText(this@MainActivity, "La aplicacion no se encuentra o no esta instalada en el dispositivo", Toast.LENGTH_LONG).show()
