@@ -5,4 +5,4 @@
     android:canRetrieveWindowContent="true"
     android:canPerformGestures="true"
     android:notificationTimeout="100"
-    android:packageNames="com.c4bc.alerta066m, med.track.med" />
+    android:packageNames="com.c4bc.alerta066m, med.track.med, com.tijuana.emergencia" />

@@ -122,6 +122,25 @@ class AutoclickerService : AccessibilityService() {
                 disableSelf()
             }, 4000)
         }
+
+
+        //Automatizacion para Med-Track
+        if (!isPanicPressed && ma == "Boton Emergencia Tijuana" && ae == "si" && event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            Log.d("Autoclicker","En la pantalla principal de Boton Emergencia Tijuana")
+
+            handler.postDelayed({
+                performShortPressAtCenter()
+                isPanicPressed = true
+            },3000)
+        }
+        if (isPanicPressed && ma == "Boton Emergencia Tijuana" && ae == "si" && event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            Log.d("Autoclicker","Terminando proceso Emergencia Tijuana")
+            handler.postDelayed({
+                Log.d("Autoclicker","Proceso boton Emergencia Tijuana terminado")
+                sharedPref.edit().putString("autoExec", "no").apply()
+                disableSelf()
+            }, 4000)
+        }
     }
 
     private fun findNodeByText(node: AccessibilityNodeInfo, targetText: String): AccessibilityNodeInfo? {
@@ -213,6 +232,44 @@ class AutoclickerService : AccessibilityService() {
             override fun onCancelled(gestureDescription: GestureDescription) {
                 // Pulsación larga cancelada
                 Log.d("performLongPressAtCenter()", "Pulsacion larga cancelada")
+            }
+        }
+
+        dispatchGesture(gestureBuilder, gestureResultCallback, null)
+    }
+
+    //Codigo que hace la pulsacion larga en el boton de panico
+    private fun performShortPressAtCenter() {
+        val windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        val displayMetrics = DisplayMetrics()
+        windowManager.defaultDisplay.getMetrics(displayMetrics)
+        val screenWidth = displayMetrics.widthPixels
+        val screenHeight = displayMetrics.heightPixels
+        Log.d("Autoclicker","Centro de la pantalla: Ancho - " +screenWidth.toString()+" Alto - "+screenWidth.toString())
+
+        val centerX = screenWidth / 2
+        val centerY = screenHeight / 2
+
+        val path = Path().apply {
+            moveTo(centerX.toFloat(), centerY.toFloat())
+        }
+
+        //Pulsacion de medio segundo, editar a 4-5 segundos en la version final
+        val stroke = GestureDescription.StrokeDescription(path, 0, 500)
+
+        val gestureBuilder = GestureDescription.Builder()
+            .addStroke(stroke)
+            .build()
+
+        val gestureResultCallback = object : AccessibilityService.GestureResultCallback() {
+            override fun onCompleted(gestureDescription: GestureDescription) {
+                // Pulsación larga completada
+                Log.d("performLongPressAtCenter()", "Pulsacion corta completada")
+            }
+
+            override fun onCancelled(gestureDescription: GestureDescription) {
+                // Pulsación larga cancelada
+                Log.d("performLongPressAtCenter()", "Pulsacion corta cancelada")
             }
         }
 

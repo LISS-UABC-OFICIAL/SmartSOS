@@ -34,6 +34,7 @@
     <queries>
         <package android:name="com.c4bc.alerta066m" />
         <package android:name="med.track.med" />
+        <package android:name="com.tijuana.emergencia" />
     </queries>
 
     <application

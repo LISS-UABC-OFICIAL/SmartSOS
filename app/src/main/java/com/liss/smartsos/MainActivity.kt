@@ -383,6 +383,9 @@ class MainActivity : AppCompatActivity() {
         if(ma=="Med-Track"){
             execMedTrack()
         }
+        if(ma=="Boton Emergencia Tijuana"){
+            exec911Tijuana()
+        }
     }
 
     //Ejecutar aplicacion MedTrak
@@ -394,6 +397,23 @@ class MainActivity : AppCompatActivity() {
             launchIntent2.setClassName("med.track.med", "io.ionic.starter.MainActivity")
             startActivity(launchIntent2)
             
+            //Ejecuta el servicio encargado de las pulsaciones automaticas
+            startAutoclickerService(getApplicationContext())
+        } else {
+            //Envia mensaje cuando no se pueda encontrar la aplicacion
+            Toast.makeText(this@MainActivity, "La aplicacion no se encuentra o no esta instalada en el dispositivo", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    //Ejecutar aplicacion Boton Emergencia Tijuana
+    private fun exec911Tijuana() {
+        //Nombre interno de la aplicacion Boton Emergencia Tijuana
+        val launchIntent3 = packageManager.getLaunchIntentForPackage("com.tijuana.emergencia")
+        if (launchIntent3 != null) {
+            sharedPref.edit().putString("autoExec", "si").apply()
+            launchIntent3.setClassName("com.tijuana.emergencia", "com.tijuana.emergencia.MainActivity")
+            startActivity(launchIntent3)
+
             //Ejecuta el servicio encargado de las pulsaciones automaticas
             startAutoclickerService(getApplicationContext())
         } else {
