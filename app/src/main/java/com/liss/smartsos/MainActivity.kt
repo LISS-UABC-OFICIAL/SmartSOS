@@ -341,6 +341,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             // El servicio de accesibilidad no está habilitado, muestra un mensaje de error o solicita al usuario que lo habilite.
             Toast.makeText(context, "El servicio de accesibilidad no esta habilitado, no se puede hacer la ejecucion automatica correctamente", Toast.LENGTH_SHORT).show()
+            stopService(Intent(applicationContext, DisableTouchService::class.java))
         }
     }
 
