@@ -823,6 +823,14 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
+        val ciudadActual = sharedPref.getString("ciudadActual", "")
+        // Verificar si la ciudad actual está vacía
+        if (ciudadActual.isNullOrEmpty()) {
+            // La ciudad actual está vacía, ejecutar la función mostrarDialogoSeleccionCiudad
+            mostrarDialogoSeleccionCiudad(this, sharedPref)
+            return
+        }
+
         val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         if (bluetoothAdapter == null) {
             // El dispositivo no admite Bluetooth
