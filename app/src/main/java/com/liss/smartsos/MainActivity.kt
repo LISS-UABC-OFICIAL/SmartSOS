@@ -24,7 +24,6 @@ import android.view.WindowManager
 //Importaciones relacionadas a las pulsaciones automaticas
 import android.accessibilityservice.AccessibilityService
 import android.view.accessibility.AccessibilityManager
-import android.content.ComponentName
 import android.provider.Settings
 
 //importaciones necesarias
@@ -33,14 +32,12 @@ import android.widget.Toast
 import android.view.KeyEvent
 import androidx.appcompat.app.AppCompatDelegate
 import android.app.PendingIntent
-import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
-import android.content.SharedPreferences
+import android.content.*
 import android.graphics.Color
 import android.net.Uri
 import android.os.*
@@ -51,6 +48,9 @@ import java.io.IOException
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
+
+    //Servicio de ubicacion
+    private lateinit var locationReceiver: LocationReceiver
 
     //Variables de la interfaz
     lateinit var uiPulseraEstado: Button
@@ -104,7 +104,9 @@ class MainActivity : AppCompatActivity() {
             }) {
             // Todos los permisos están concedidos
             // Puedes realizar las operaciones relacionadas con los permisos aquí
-            ubi = getLocationLink(this)
+            //ubi = getLocationLink(this)
+            //Inicia el servicio de ubicacion
+            bkgLocServiceStart()
         } else {
             // Al menos uno de los permisos no está concedido
             showPermissionDialog()
@@ -259,12 +261,16 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == 1) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // El permiso de ubicación fue concedido, llamamos a getLocationLink()
-                ubi = getLocationLink(this)
+                //ubi = getLocationLink(this)
+                //Llamamos al servicio de ubicacion
+                bkgLocServiceStart()
             }
             else{
                 // Comprobamos por lo menos se obtuvo el permiso de ubicación y llamamos a getLocationLink()
                 if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                    ubi = getLocationLink(this)
+                    //ubi = getLocationLink(this)
+                    //Llamamos al servicio de ubicacion
+                    bkgLocServiceStart()
                 }
                 showPermissionErrorDialog()
             }
@@ -366,13 +372,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun execSOS(){
-        ubi = getLocationLink(this)
+        //ubi = getLocationLink(this)
         val cc = getSelectedContactNumber()
         val ma = sharedPref.getString("modoActivo", "911MovilBC")
         if (cc != "error")
         {
             sendSMS(cc, "¡Necesito Ayuda!"+" "+ubi,this)
-            //Toast.makeText(this, "OOF"+ubi, Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Mensaje enviado", Toast.LENGTH_LONG).show()
+            Log.d("execSOS","Ubicacion:"+ubi)
         }
         else{
             Toast.makeText(this, "Se necesita indicar un contacto de confianza para enviar mensajes", Toast.LENGTH_LONG).show()
@@ -705,6 +712,28 @@ class MainActivity : AppCompatActivity() {
         return ""
     }
 
+    //Servicio de ubicacion en 2do plano
+    inner class LocationReceiver : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val locationLink = intent?.getStringExtra("locationLink")
+            Log.d("MainActivity", "Ubicación recibida: $locationLink")
+            // Aquí puedes hacer lo que necesites con el enlace de ubicación
+            if (locationLink != null) {
+                ubi = locationLink
+            }
+        }
+    }
+
+    fun bkgLocServiceStart()
+    {
+        //Servicio de ubicacion
+        locationReceiver = LocationReceiver()
+        val intentFilter = IntentFilter("LOCATION_LINK_ACTION")
+        registerReceiver(locationReceiver, intentFilter)
+        val serviceIntent = Intent(this, BkgLocService::class.java)
+        startForegroundService(serviceIntent)
+    }
+
     //Deteccion Bluetooth Serial
     private inner class BluetoothReadTask : AsyncTask<String, String, Void>() {
         private val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
@@ -869,6 +898,9 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         sharedPref.edit().putString("autoExec", "no").apply()
+        if (::locationReceiver.isInitialized) {
+            unregisterReceiver(locationReceiver)
+        }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {

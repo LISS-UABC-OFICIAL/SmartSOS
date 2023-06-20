@@ -23,6 +23,7 @@ class DisableTouchService : Service() {
     override fun onCreate() {
         super.onCreate()
         disableTouch()
+        //Agregar un delay de 10s para rehabilitar el touch en caso de que se quede atascado el servicio por alguna razon
     }
 
     fun disableTouch() {
