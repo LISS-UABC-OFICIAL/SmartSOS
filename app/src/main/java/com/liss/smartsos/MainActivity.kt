@@ -41,6 +41,7 @@ import android.util.Log
 import android.view.*
 import android.widget.TextView
 import androidx.core.app.ActivityCompat
+import org.w3c.dom.Text
 import java.io.IOException
 import java.util.*
 
@@ -53,6 +54,11 @@ class MainActivity : AppCompatActivity() {
     lateinit var uiPulseraEstado: Button
     lateinit var uiPulseraNombre: TextView
     lateinit var uiPulseraDireccion: TextView
+
+    lateinit var uiAppEstado: Button
+    lateinit var uiAppNombre: TextView
+    lateinit var uiAppPaquete: TextView
+    lateinit var uiAppVersion: TextView
 
     //Configuracion para obtener valores de las preferencias
     lateinit var sharedPref: SharedPreferences
@@ -115,8 +121,8 @@ class MainActivity : AppCompatActivity() {
         sharedPref.edit().putString("autoExec", "no").apply()
         Log.d("DEBUG: MainActivity onCreate()","ID de contacto guardado - "+sharedPref.getString("contactId", "error"))
         Log.d("DEBUG: MainActivity onCreate()","Numero de contacto guardado - "+getSelectedContactNumber())
-        //Imprimir ciudad actual en la consola
         Log.d("DEBUG: MainActivity onCreate()","Modo activo - "+sharedPref.getString("modoActivo", "911MovilBC"))
+        //Imprimir ciudad actual en la consola
         Log.d("DEBUG: MainActivity onCreate()","Ciudad guardada - "+sharedPref.getString("ciudadActual", ""))
         val ciudadActual = sharedPref.getString("ciudadActual", "")
         // Verificar si la ciudad actual está vacía
@@ -135,6 +141,14 @@ class MainActivity : AppCompatActivity() {
 
         uiPulseraDireccion = findViewById(R.id.pulseraDireccion)
         uiPulseraDireccion.text = "Direccion:"
+
+        uiAppEstado = findViewById(R.id.buttonAplicacionEstado)
+        uiAppNombre = findViewById(R.id.aplicacionNombre)
+        uiAppPaquete = findViewById(R.id.aplicacionPaquete)
+        uiAppVersion = findViewById(R.id.aplicacionVersion)
+
+        //Checar modo al inicio
+        checkModeStartup()
 
         //Boton de prueba para ejecutar la aplicacion 911
         val buttonTest = findViewById<Button>(R.id.button)
@@ -198,9 +212,139 @@ class MainActivity : AppCompatActivity() {
             val modoSeleccionado = modos[which]
             sharedPref.edit().putString("modoActivo", modoSeleccionado).apply()
             Log.d("mostrarDialogoSeleccionAplicacion()", "Modo actualizado: " + sharedPref.getString("modoActivo", "911MovilBC"))
+            when (modoSeleccionado) {
+                "911MovilBC" -> {
+                    checkAppInstalled("com.c4bc.alerta066m")
+                }
+                "Boton Emergencia Tijuana" -> {
+                    checkAppInstalled("com.tijuana.emergencia")
+                }
+                "Med-Track" -> {
+                    checkAppInstalled("med.track.med")
+                }
+                "Enviar SMS solamente" -> {
+                    uiAppNombre.text = "Envio SMS"
+                    uiAppPaquete.text = "Solo se enviara SMS"
+                    if(getSelectedContactNumber() != "error"){
+                        uiAppEstado.text = "Activo"
+                        uiAppEstado.setBackgroundColor(Color.BLUE)
+                        uiAppVersion.text = "Numero: "+getSelectedContactNumber()
+                    }
+                    else{
+                        uiAppEstado.text = "Esperando"
+                        uiAppEstado.setBackgroundColor(Color.GRAY)
+                        uiAppVersion.text = "Falta configurar contacto"
+                    }
+                }
+            }
             dialog.dismiss()
         }
         builder.show()
+    }
+
+    //Checar si la aplicacion esta instalada
+    fun isAppInstalled(packageName: String, packageManager: PackageManager): Boolean {
+        try {
+            packageManager.getPackageInfo(packageName, 0)
+            return true
+        } catch (e: PackageManager.NameNotFoundException) {
+            return false
+        }
+    }
+
+    fun checkAppInstalled(packageName: String) {
+        val packageManager = applicationContext.packageManager
+        if (isAppInstalled(packageName, packageManager)) {
+            Log.d("checkAppInstalled", "La aplicación $packageName está instalada en el dispositivo.")
+            when(packageName){
+                "com.c4bc.alerta066m" -> {
+                    uiAppEstado.text = "Instalada"
+                    uiAppEstado.setBackgroundColor(Color.BLUE)
+                    uiAppNombre.text = "911MovilBC"
+                    uiAppPaquete.text = "Paquete: $packageName"
+                    uiAppVersion.text = "Version: "+getAppVersion(packageName)
+                }
+                "com.tijuana.emergencia" -> {
+                    uiAppEstado.text = "Instalada"
+                    uiAppEstado.setBackgroundColor(Color.BLUE)
+                    uiAppNombre.text = "911 Tijuana"
+                    uiAppPaquete.text = "Paq: $packageName"
+                    uiAppVersion.text = "Version: "+getAppVersion(packageName)
+                }
+                "med.track.med" -> {
+                    uiAppEstado.text = "Instalada"
+                    uiAppEstado.setBackgroundColor(Color.BLUE)
+                    uiAppNombre.text = "Med-Track"
+                    uiAppPaquete.text = "Paquete: $packageName"
+                    uiAppVersion.text = "Version: "+getAppVersion(packageName)
+                }
+            }
+        } else {
+            Log.d("checkAppInstalled", "La aplicación $packageName no está instalada en el dispositivo.")
+            when(packageName){
+                "com.c4bc.alerta066m" -> {
+                    uiAppEstado.text = "No instalada"
+                    uiAppEstado.setBackgroundColor(Color.GRAY)
+                    uiAppNombre.text = "911MovilBC"
+                    uiAppPaquete.text = "Paquete:"
+                    uiAppVersion.text = "Version:"
+                }
+                "com.tijuana.emergencia" -> {
+                    uiAppEstado.text = "No instalada"
+                    uiAppEstado.setBackgroundColor(Color.GRAY)
+                    uiAppNombre.text = "Boton Emergencia Tijuana"
+                    uiAppPaquete.text = "Paquete:"
+                    uiAppVersion.text = "Version:"
+                }
+                "med.track.med" -> {
+                    uiAppEstado.text = "No instalada"
+                    uiAppEstado.setBackgroundColor(Color.GRAY)
+                    uiAppNombre.text = "Med-Track"
+                    uiAppPaquete.text = "Paquete:"
+                    uiAppVersion.text = "Version:"
+                }
+            }
+        }
+    }
+
+    //Chequeo de modo al inicio
+    fun checkModeStartup(){
+        when (sharedPref.getString("modoActivo", "911MovilBC")) {
+            "911MovilBC" -> {
+                checkAppInstalled("com.c4bc.alerta066m")
+            }
+            "Boton Emergencia Tijuana" -> {
+                checkAppInstalled("com.tijuana.emergencia")
+            }
+            "Med-Track" -> {
+                checkAppInstalled("med.track.med")
+            }
+            "Enviar SMS solamente" -> {
+                uiAppNombre.text = "Envio SMS"
+                uiAppPaquete.text = "Solo se enviara SMS"
+                if(getSelectedContactNumber() != "error"){
+                    uiAppEstado.text = "Activo"
+                    uiAppEstado.setBackgroundColor(Color.BLUE)
+                    uiAppVersion.text = "Numero: "+getSelectedContactNumber()
+                }
+                else{
+                    uiAppEstado.text = "Esperando"
+                    uiAppEstado.setBackgroundColor(Color.GRAY)
+                    uiAppVersion.text = "Falta configurar contacto"
+                }
+            }
+        }
+    }
+
+    //Obtener la version de la app
+    fun getAppVersion(packageName: String): String {
+        val packageManager = applicationContext.packageManager
+        return try {
+            val packageInfo = packageManager.getPackageInfo(packageName, 0)
+            packageInfo.versionName
+        } catch (e: PackageManager.NameNotFoundException) {
+            ""
+        }
     }
 
     //Pedir al usuario su ciudad actual
@@ -486,6 +630,8 @@ class MainActivity : AppCompatActivity() {
         builder.apply {
             setMessage("¿Desea salir de la aplicacion?")
             setPositiveButton("Aceptar") { _, _ ->
+                //Deshabilita el bloqueo de pulsaciones por parte del usuario
+                stopService(Intent(applicationContext, BkgLocService::class.java))
                 finish()
                 Process.killProcess(Process.myPid())
             }
@@ -543,7 +689,7 @@ class MainActivity : AppCompatActivity() {
         val builder = AlertDialog.Builder(this)
         builder.apply {
             setTitle("Modo bolsillo")
-            setMessage("Este modo debe de utilizarse en caso de que el celular tenga un patron de bloqueo, al activar este modo se ignoraran las pulsaciones de la pantalla mientras la aplicacion se encuentre en la pantalla principal. Para desactivar este modo pulse cualquiera de las teclas de volumen.")
+            setMessage("Este modo debe de utilizarse en caso de que el celular tenga un patron de bloqueo, al activar este modo se ignoraran las pulsaciones de la pantalla mientras la aplicacion se encuentre en la pantalla principal. Para desactivar este modo pulse cualquiera de las teclas de volumen. Se requiere que no se apague la pantalla.")
             setPositiveButton("Aceptar") { _, _ ->
                 isPocketModeEnabled = true
                 disableTouchListeners(findViewById(android.R.id.content))
@@ -728,6 +874,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     cursor.close()
                     Toast.makeText(this, "Contacto de confianza guardado: " + getSelectedContactNumber(), Toast.LENGTH_LONG).show()
+                    checkModeStartup()
                 }
             }
         }
