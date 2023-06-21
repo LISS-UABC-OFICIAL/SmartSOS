@@ -1,8 +1,6 @@
 package com.liss.smartsos
 
 import androidx.appcompat.app.AppCompatActivity
-import android.view.Menu
-import android.view.MenuItem
 
 //importaciones relacionadas a la conectividad bluetooth
 import android.bluetooth.*
@@ -19,7 +17,6 @@ import android.location.LocationManager
 import android.location.LocationListener
 
 //Importaciones relacionadas al encendido de pantalla
-import android.view.WindowManager
 
 //Importaciones relacionadas a las pulsaciones automaticas
 import android.accessibilityservice.AccessibilityService
@@ -29,7 +26,6 @@ import android.provider.Settings
 //importaciones necesarias
 import android.widget.Button
 import android.widget.Toast
-import android.view.KeyEvent
 import androidx.appcompat.app.AppCompatDelegate
 import android.app.PendingIntent
 import android.content.pm.PackageManager
@@ -42,6 +38,7 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.*
 import android.util.Log
+import android.view.*
 import android.widget.TextView
 import androidx.core.app.ActivityCompat
 import java.io.IOException
@@ -168,6 +165,8 @@ class MainActivity : AppCompatActivity() {
     private var isSerialScanRunning = false
     //Chequeo para evitar que la deteccion de la pulsacion se detecte multiples veces, interrumpiendo el proceso automatico
     private var isButtonPressDetected = false
+    //Chequeo para desactivar el modo bolsillo si es que fue activado anteriormente
+    private var isPocketModeEnabled = false
     //Localizacion actual
     var ubi = ""
     // Array de permisos a solicitar
@@ -441,7 +440,8 @@ class MainActivity : AppCompatActivity() {
         when (item.itemId) {
             R.id.settings -> {
                 //Acciones a realizar al presionar el boton
-                Toast.makeText(this, "Boton de configuracion presionado", Toast.LENGTH_LONG).show()
+                Log.d("onOptionsItemSelected()","Boton de configuracion presionado")
+                //Toast.makeText(this, "Boton de configuracion presionado", Toast.LENGTH_LONG).show()
                 return true
             }
             R.id.contactSelect -> {
@@ -456,9 +456,72 @@ class MainActivity : AppCompatActivity() {
                 mostrarDialogoSeleccionCiudad(this, sharedPref)
                 return true
             }
+            R.id.pocketMode -> {
+                showPocketModeDialog()
+                return true
+            }
             else -> return super.onOptionsItemSelected(item)
         }
     }
+
+    //Codificacion del modo bolsillo
+    //deshabilita todos los botones del main activity
+    private fun disableTouchListeners(view: View) {
+        if (view is ViewGroup) {
+            val childCount = view.childCount
+            for (i in 0 until childCount) {
+                val child = view.getChildAt(i)
+                disableTouchListeners(child)
+            }
+        } else if (view is Button) {
+            view.isEnabled = false
+        }
+
+        // Deshabilita tambien el boton de configuracion
+        val settingsButton = findViewById<View>(R.id.settings)
+        settingsButton.isEnabled = false
+
+        //Mantiene la pantalla encendida
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+
+    //Funcion para volver a habilitar los botones del main activity
+    private fun enableTouchListeners(view: View) {
+        if (view is ViewGroup) {
+            val childCount = view.childCount
+            for (i in 0 until childCount) {
+                val child = view.getChildAt(i)
+                enableTouchListeners(child)
+            }
+        } else if (view is Button) {
+            view.isEnabled = true
+        }
+
+        //Vuelve a habilitar el boton de configuracion
+        val settingsButton = findViewById<View>(R.id.settings)
+        settingsButton.isEnabled = true
+
+        //Remueve el flag de mantener la pantalla encendida
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+
+    //Mostrar al usuario el mensaje de que el modo esta habilitado
+    //Codificacion necesaria en la deshabilitacion de pulsaciones por parte del usuario
+    private fun showPocketModeDialog(){
+        val builder = AlertDialog.Builder(this)
+        builder.apply {
+            setTitle("Modo bolsillo")
+            setMessage("Este modo debe de utilizarse en caso de que el celular tenga un patron de bloqueo, al activar este modo se ignoraran las pulsaciones de la pantalla mientras la aplicacion se encuentre en la pantalla principal. Para desactivar este modo pulse cualquiera de las teclas de volumen.")
+            setPositiveButton("Aceptar") { _, _ ->
+                isPocketModeEnabled = true
+                disableTouchListeners(findViewById(android.R.id.content))
+            }
+        }
+        val dialog = builder.create()
+        dialog.show()
+    }
+
+    //Codificacion encargada de manejar el encendido de pantalla
     fun ejecutarConDelay(context: Context) {
         val handler = Handler()
         handler.postDelayed({
@@ -906,19 +969,26 @@ class MainActivity : AppCompatActivity() {
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
 
         if (event != null && event.action == KeyEvent.ACTION_DOWN) {
-            Toast.makeText(this, "KeyCode: $keyCode", Toast.LENGTH_SHORT).show()
+            //Toast.makeText(this, "KeyCode: $keyCode", Toast.LENGTH_SHORT).show()
+            Log.d("onKeyDown()","KeyCode: $keyCode")
             //return true
         }
 
         when (keyCode) {
-            KeyEvent.KEYCODE_BUTTON_START-> {
-                Toast.makeText(this, "Pulsación de boton detectada", Toast.LENGTH_LONG).show()
-                execSOS()
+            KeyEvent.KEYCODE_VOLUME_UP-> {
+                if(isPocketModeEnabled){
+                    Toast.makeText(this, "Modo bolsillo desactivado", Toast.LENGTH_LONG).show()
+                    enableTouchListeners(findViewById(android.R.id.content))
+                    isPocketModeEnabled = false
+                }
                 return true
             }
-            KeyEvent.KEYCODE_BUTTON_SELECT -> {
-                Toast.makeText(this, "Pulsación de boton detectada", Toast.LENGTH_LONG).show()
-                execMedTrack()
+            KeyEvent.KEYCODE_VOLUME_DOWN-> {
+                if(isPocketModeEnabled){
+                    Toast.makeText(this, "Modo bolsillo desactivado", Toast.LENGTH_LONG).show()
+                    enableTouchListeners(findViewById(android.R.id.content))
+                    isPocketModeEnabled = false
+                }
                 return true
             }
         }

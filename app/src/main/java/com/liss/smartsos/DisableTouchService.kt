@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
 import android.util.Log
 import android.view.Gravity
@@ -15,6 +16,7 @@ class DisableTouchService : Service() {
 
     private lateinit var windowManager: WindowManager
     private lateinit var transparentView: View
+    private val handler = Handler()
 
     override fun onBind(intent: Intent): IBinder? {
         return null
@@ -24,6 +26,9 @@ class DisableTouchService : Service() {
         super.onCreate()
         disableTouch()
         //Agregar un delay de 10s para rehabilitar el touch en caso de que se quede atascado el servicio por alguna razon
+        handler.postDelayed({
+            reEnableTouch()
+        },10000)
     }
 
     fun disableTouch() {
@@ -53,7 +58,12 @@ class DisableTouchService : Service() {
     }
 
     fun reEnableTouch(){
-        windowManager.removeView(transparentView)
+        try {
+            windowManager.removeView(transparentView)
+        } catch (e: IllegalArgumentException) {
+            // Manejar la excepción de tipo IllegalArgumentException
+            Log.e("TAG", "Error al eliminar la vista transparente: ${e.message}")
+        }
     }
 
     override fun onDestroy() {

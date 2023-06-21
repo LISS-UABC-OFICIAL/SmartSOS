@@ -22,6 +22,14 @@
                 android:id="@+id/citySelect"
                 android:title="Seleccionar ciudad actual"
                 app:showAsAction="never" />
+            <item
+                android:id="@+id/pocketMode"
+                android:title="Modo bolsillo"
+                app:showAsAction="never" />
+            <item
+                android:id="@+id/aapExit"
+                android:title="Salir"
+                app:showAsAction="never" />
         </menu>
     </item>
 </menu>
