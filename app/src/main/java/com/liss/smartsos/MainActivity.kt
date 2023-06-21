@@ -170,14 +170,24 @@ class MainActivity : AppCompatActivity() {
     //Localizacion actual
     var ubi = ""
     // Array de permisos a solicitar
-    val permissions = arrayOf(
-        Manifest.permission.BLUETOOTH,
-        Manifest.permission.BLUETOOTH_ADMIN,
-        Manifest.permission.BLUETOOTH_CONNECT,
-        Manifest.permission.READ_CONTACTS,
-        Manifest.permission.SEND_SMS,
-        Manifest.permission.ACCESS_FINE_LOCATION
-    )
+    val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        arrayOf(
+            Manifest.permission.BLUETOOTH,
+            Manifest.permission.BLUETOOTH_ADMIN,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.READ_CONTACTS,
+            Manifest.permission.SEND_SMS,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        )
+    } else {
+        arrayOf(
+            Manifest.permission.BLUETOOTH,
+            Manifest.permission.BLUETOOTH_ADMIN,
+            Manifest.permission.READ_CONTACTS,
+            Manifest.permission.SEND_SMS,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        )
+    }
 
     //Pedir al usuario la aplicacion a utilizar
     private fun mostrarDialogoSeleccionAplicacion(context: Context, sharedPref: SharedPreferences) {
@@ -318,7 +328,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestLocationPermanent(){
-        requestPermissions(arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION), 33)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            requestPermissions(arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION), 33)
+        }
     }
 
     //Codificacion necesaria en la deshabilitacion de pulsaciones por parte del usuario
@@ -460,8 +472,29 @@ class MainActivity : AppCompatActivity() {
                 showPocketModeDialog()
                 return true
             }
+            R.id.appExit -> {
+                showExitDialog()
+                return true
+            }
             else -> return super.onOptionsItemSelected(item)
         }
+    }
+
+    //Salir de la aplicacion
+    private fun showExitDialog() {
+        val builder = AlertDialog.Builder(this)
+        builder.apply {
+            setMessage("¿Desea salir de la aplicacion?")
+            setPositiveButton("Aceptar") { _, _ ->
+                finish()
+                Process.killProcess(Process.myPid())
+            }
+            setNegativeButton("Cancelar") { _, _ ->
+
+            }
+        }
+        val dialog = builder.create()
+        dialog.show()
     }
 
     //Codificacion del modo bolsillo
@@ -506,7 +539,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     //Mostrar al usuario el mensaje de que el modo esta habilitado
-    //Codificacion necesaria en la deshabilitacion de pulsaciones por parte del usuario
     private fun showPocketModeDialog(){
         val builder = AlertDialog.Builder(this)
         builder.apply {

@@ -27,7 +27,7 @@
                 android:title="Modo bolsillo"
                 app:showAsAction="never" />
             <item
-                android:id="@+id/aapExit"
+                android:id="@+id/appExit"
                 android:title="Salir"
                 app:showAsAction="never" />
         </menu>
