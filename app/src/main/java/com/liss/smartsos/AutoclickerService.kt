@@ -217,7 +217,7 @@ class AutoclickerService : AccessibilityService() {
         }
 
         //Pulsacion de medio segundo, editar a 4-5 segundos en la version final
-        val stroke = GestureDescription.StrokeDescription(path, 0, 500)
+        val stroke = GestureDescription.StrokeDescription(path, 0, 5000)
 
         val gestureBuilder = GestureDescription.Builder()
             .addStroke(stroke)
@@ -238,7 +238,7 @@ class AutoclickerService : AccessibilityService() {
         dispatchGesture(gestureBuilder, gestureResultCallback, null)
     }
 
-    //Codigo que hace la pulsacion larga en el boton de panico
+    //Codigo que hace la pulsacion en el boton de panico
     private fun performShortPressAtCenter() {
         val windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         val displayMetrics = DisplayMetrics()

@@ -41,6 +41,7 @@ import android.util.Log
 import android.view.*
 import android.widget.TextView
 import androidx.core.app.ActivityCompat
+import androidx.core.view.isVisible
 import org.w3c.dom.Text
 import java.io.IOException
 import java.util.*
@@ -152,6 +153,8 @@ class MainActivity : AppCompatActivity() {
 
         //Boton de prueba para ejecutar la aplicacion 911
         val buttonTest = findViewById<Button>(R.id.button)
+        //Ajustar a true si se quiere hacer pruebas
+        buttonTest.isVisible = false
         buttonTest.setOnClickListener {
             //Ejecuta la funcion al pulsar el boton
             //Toast.makeText(this, getLocationLink(this), Toast.LENGTH_LONG).show()
